@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Death of the Moth — Virginia Woolf</title>
+<title>Poems in Flight</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,400;1,500&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -186,7 +186,13 @@
     <div class="panel-section">
       <span class="panel-label">interaction</span>
       <button class="mode-btn active" data-mode="breakfree">
-        break and free
+        moth
+      </button>
+      <button class="mode-btn" data-mode="magnet">
+        magnet
+      </button>
+      <button class="mode-btn" data-mode="crumble">
+        crumble
       </button>
       <button class="mode-btn" data-mode="drop">
         drop
@@ -196,9 +202,6 @@
       </button>
       <button class="mode-btn" data-mode="ripple">
         ripple
-      </button>
-      <button class="mode-btn" data-mode="magnet">
-        magnet
       </button>
     </div>
 
@@ -359,6 +362,20 @@ const poems = {
     ["because", "each", "has", "been", "sent"],
     ["as", "a", "guide", "from", "beyond."],
   ],
+
+  crumble: [
+    ["The", "struggle", "was", "over."],
+    ["The", "insignificant", "little", "creature", "now", "knew", "death."],
+    ["As", "I", "looked", "at", "the", "dead", "moth,", "this", "minute"],
+    ["wayside", "triumph", "of", "so", "great", "a", "force"],
+    ["over", "so", "mean", "an", "antagonist", "filled", "me", "with", "wonder."],
+    ["Just", "as", "life", "had", "been", "strange", "a", "few", "minutes", "before,"],
+    ["so", "death", "was", "now", "as", "strange."],
+    ["The", "moth", "having", "righted", "himself", "now", "lay"],
+    ["most", "decently", "and", "uncomplainingly", "composed."],
+    ["O", "yes,", "he", "seemed", "to", "say,"],
+    ["death", "is", "stronger", "than", "I", "am."],
+  ],
 };
 
 let currentMode = 'breakfree';
@@ -368,14 +385,18 @@ const titles = {
   drop:      'I Live My Life — Rainer Maria Rilke, 1905',
   blossom:   'The Summer Day — Mary Oliver, 1990',
   ripple:    'The Guest House — Rumi, 13th century',
-  magnet:   'Tonight I Can Write — Pablo Neruda, 1924',};
+  magnet:   'Tonight I Can Write — Pablo Neruda, 1924',
+  crumble:  'The Death of the Moth — Virginia Woolf, 1942',
+};
 
 const hints = {
   breakfree: 'hover the words —<br>long words split into wings,<br>short words dart like bees.',
   drop:      'hover anywhere —<br>and let it all<br>come down.',
   blossom:   'hover the words —<br>and watch them<br>bloom.',
   ripple:    'hover the words —<br>and let them<br>ripple.',
-  magnet:   'move your cursor —<br>words are drawn<br>toward you.',};
+  magnet:   'move your cursor —<br>words are drawn<br>toward you.',
+  crumble:  'hover anywhere —<br>the poem crumbles<br>from the end.',
+};
 
 function setMode(m) {
   if (currentMode === 'ripple'  && m !== 'ripple')  destroyRipple();
@@ -390,8 +411,12 @@ function setMode(m) {
 }
 
 function resetPoem() {
-  raining = false;
+  raining   = false;
+  crumbling = false;
+  restoring = false;
+  Object.keys(pileHeights).forEach(k => delete pileHeights[k]);
   document.querySelectorAll('.blossom-svg').forEach(el => el.remove());
+  document.querySelectorAll('.crumble-letter').forEach(el => el.remove());
   if (currentMode === 'ripple')  destroyRipple();
   if (currentMode === 'magnet') destroyMagnet();
   renderPoem();
@@ -471,10 +496,16 @@ function onInteract(e) {
     launchRipple(span);
   } else if (currentMode === 'magnet') {
     // Magnet mode updates continuously from mouse movement.
+  } else if (currentMode === 'crumble') {
+    cascadeCrumble();
   }
 }
 
-let raining = false;
+let raining    = false;
+let crumbling  = false;
+let restoring  = false;
+const pileHeights = {}; // x-bucket → current pile top (px from viewport top)
+const PILE_BUCKET = 20; // column width for stacking
 
 function cascadeRain() {
   if (raining) return;
@@ -793,6 +824,9 @@ const rippleWaves  = [];
 let   rippleRafId  = null;
 let   rippleActive = false;
 let   rippleSketch = null;
+let   lastRippleAt = 0;
+const rippleCooldownMs = 120;
+const maxRippleWaves = 10;
 
 function ensureRippleSketch() {
   if (rippleSketch || typeof p5 === 'undefined') return;
@@ -820,19 +854,39 @@ function ensureRippleSketch() {
         const age = now - w.born;
         if (age < 0 || age > w.life) return;
         const t = age / w.life;
-        const alpha = 160 * (1 - t);
-        const r1 = 8 + age * 240;
-        const r2 = r1 * 0.72;
-        p.stroke(255, 255, 255, alpha);
-        p.circle(w.lx, w.ly, r1 * 2);
-        p.stroke(255, 255, 255, alpha * 0.5);
-        p.circle(w.lx, w.ly, r2 * 2);
+        const alpha = 120 * (1 - t);
+        const baseRadius = 14 + age * 230;
+
+        // Draw several irregular rings instead of perfect circles so the
+        // ripple feels more fluid and less geometric.
+        drawOrganicRing(w, now, baseRadius, alpha, 0);
+        drawOrganicRing(w, now, baseRadius * 0.78, alpha * 0.7, 1.7);
+        drawOrganicRing(w, now, baseRadius * 1.18, alpha * 0.45, 3.3);
       });
     };
 
     p.windowResized = () => {
       p.resizeCanvas(paper.clientWidth, paper.clientHeight);
     };
+
+    function drawOrganicRing(wave, now, radius, alpha, seedShift) {
+      const points = 64;
+      const wobble = 3.5 + radius * 0.012;
+      p.stroke(255, 255, 255, alpha);
+      p.noFill();
+      p.beginShape();
+      for (let i = 0; i <= points; i++) {
+        const a = (i / points) * p.TWO_PI;
+        const nx = Math.cos(a) * 0.65 + wave.seed + seedShift;
+        const ny = Math.sin(a) * 0.65 + now * 0.9 + wave.seed * 0.2;
+        const n = p.noise(nx, ny) - 0.5;
+        const localR = radius + n * wobble;
+        const x = wave.lx + Math.cos(a) * localR;
+        const y = wave.ly + Math.sin(a) * localR;
+        p.vertex(x, y);
+      }
+      p.endShape();
+    }
   });
 }
 
@@ -906,15 +960,44 @@ function tickRipple() {
 }
 
 function launchRipple(span) {
+  const nowMs = performance.now();
+  if (nowMs - lastRippleAt < rippleCooldownMs) return;
+  lastRippleAt = nowMs;
+
   const rect = span.getBoundingClientRect();
   const paperRect = document.getElementById('paper').getBoundingClientRect();
   const x = rect.left + rect.width / 2;
   const y = rect.top  + rect.height / 2;
+
+  // If two triggers are nearly in the same place, reinforce the latest wave
+  // instead of creating a brand-new ripple every time.
+  const nearest = rippleWaves[rippleWaves.length - 1];
+  if (nearest) {
+    const dx = nearest.x - x;
+    const dy = nearest.y - y;
+    const d2 = dx * dx + dy * dy;
+    if (d2 < 26 * 26) {
+      nearest.born = performance.now() / 1000;
+      nearest.amp = Math.min(nearest.amp + 0.8, 7.5);
+      nearest.life = Math.min(nearest.life + 0.1, 2.8);
+      nearest.lx = x - paperRect.left;
+      nearest.ly = y - paperRect.top;
+      nearest.x = x;
+      nearest.y = y;
+      return;
+    }
+  }
+
+  if (rippleWaves.length >= maxRippleWaves) {
+    rippleWaves.shift();
+  }
+
   rippleWaves.push({
     x,
     y,
     lx:   x - paperRect.left,
     ly:   y - paperRect.top,
+    seed: Math.random() * 1000,
     born: performance.now() / 1000,
     life: 2.4,
     amp:  4 + Math.random() * 3,
@@ -1019,13 +1102,212 @@ function tickMagnet() {
 }
 
 
+/* ── CRUMBLE ──
+   First hover triggers the whole poem to collapse from the last word backwards.
+   Each word's letters detach last-to-first and fall under gravity,
+   landing at the bottom where they pile up with natural overlap.
+*/
+function cascadeCrumble() {
+  if (crumbling) return;
+  crumbling = true;
+
+  const allSpans = Array.from(document.querySelectorAll('#poem-display .word-part'));
+
+  // Group spans into rows by vertical position (bucket to 10px)
+  const rowMap = new Map();
+  allSpans.forEach(span => {
+    const top = Math.round(span.getBoundingClientRect().top / 10) * 10;
+    if (!rowMap.has(top)) rowMap.set(top, []);
+    rowMap.get(top).push(span);
+  });
+
+  // Sort rows top→bottom, then reverse so we start from the bottom row
+  const rows = [...rowMap.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([, spans]) => spans)
+    .reverse();
+
+  // Snake order: bottom row right→left, next row left→right, etc.
+  const ordered = [];
+  rows.forEach((row, i) => {
+    ordered.push(...(i % 2 === 0 ? [...row].reverse() : row));
+  });
+
+  ordered.forEach((span, idx) => {
+    setTimeout(() => {
+      if (span.dataset.gone === '1') return;
+      crumbleWord(span);
+    }, idx * 38);
+  });
+
+  setTimeout(() => { crumbling = false; }, ordered.length * 38 + 1500);
+}
+
+function crumbleWord(span) {
+  if (span.dataset.gone === '1') return;
+  span.dataset.gone = '1';
+
+  const word = span.dataset.word;
+  const rect = span.getBoundingClientRect();
+  span.style.visibility = 'hidden';
+
+  for (let i = 0; i < word.length; i++) {
+    const letter = word[i];
+    if (letter === ' ') continue;
+
+    const letterX = rect.left + ((i + 0.5) / word.length) * rect.width;
+    const letterY = rect.top  + rect.height / 2;
+    // Last letter falls first
+    const delay = (word.length - 1 - i) * 28;
+    setTimeout(() => launchCrumbleLetter(letter, letterX, letterY), delay);
+  }
+}
+
+function launchCrumbleLetter(letter, x, y) {
+  const el = document.createElement('div');
+  el.className   = 'fly-particle crumble-letter';
+  el.textContent = letter;
+  el._originX    = x;
+  el._originY    = y;
+  el.style.left      = x + 'px';
+  el.style.top       = y + 'px';
+  el.style.transform = 'translate(-50%,-50%)';
+  document.body.appendChild(el);
+
+  const floor  = window.innerHeight - 10;
+  let vy  = 2.5 + Math.random() * 2;
+  let vx  = (Math.random() - 0.5) * 0.8;
+  let cx  = x, cy = y;
+  const restAngle = (Math.random() - 0.5) * 30;
+
+  function fall() {
+    vy += 0.28;
+    cy += vy;
+    cx += vx;
+    vx *= 0.98;
+
+    el.style.left      = cx + 'px';
+    el.style.top       = cy + 'px';
+    el.style.transform = `translate(-50%,-50%) rotate(${restAngle.toFixed(1)}deg)`;
+
+    if (cy < floor) {
+      requestAnimationFrame(fall);
+    } else {
+      const bucket = Math.round(cx / PILE_BUCKET) * PILE_BUCKET;
+      if (!pileHeights[bucket]) pileHeights[bucket] = floor;
+      const settleY = pileHeights[bucket];
+      pileHeights[bucket] -= 10 + Math.random() * 3;
+
+      el.style.top           = settleY + 'px';
+      el.style.left          = (cx + (Math.random() - 0.5) * 3) + 'px';
+      el.style.transform     = `translate(-50%,-50%) rotate(${restAngle.toFixed(1)}deg)`;
+      el.style.pointerEvents = 'auto';
+      el.style.cursor        = 'pointer';
+    }
+  }
+  requestAnimationFrame(fall);
+}
+
 // Bind buttons
 document.querySelectorAll('.mode-btn').forEach(btn => {
   btn.addEventListener('click', () => setMode(btn.dataset.mode));
 });
 document.getElementById('reset-btn').addEventListener('click', resetPoem);
 
+
 renderPoem();
+
+// Click the pile → letters try to rise home, fail, fall back down
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('crumble-letter') && !restoring) {
+    attemptRestore();
+  }
+});
+
+function attemptRestore() {
+  restoring = true;
+  const letters = Array.from(document.querySelectorAll('.crumble-letter'));
+  letters.forEach(el => { el.style.pointerEvents = 'none'; });
+
+  letters.forEach((el, i) => {
+    setTimeout(() => attemptLetterRise(el), i * 5);
+  });
+
+  // Re-enable clicking once all arcs have settled
+  setTimeout(() => {
+    letters.forEach(el => { el.style.pointerEvents = 'auto'; });
+    restoring = false;
+  }, letters.length * 5 + 2200);
+}
+
+function attemptLetterRise(el) {
+  const fromX = parseFloat(el.style.left);
+  const fromY = parseFloat(el.style.top);
+  const toX   = el._originX;
+  const toY   = el._originY;
+  const fromAngle = parseFloat(
+    (el.style.transform.match(/rotate\(([-\d.]+)/) ?? ['', '0'])[1]
+  );
+
+  // Phase 1: ease-out lerp toward origin — same motion as the old restore,
+  // but only travels reach% of the way before giving up.
+  const reach = 0.55 + Math.random() * 0.2; // 55–75% of the way home
+  const dur1  = 22 + Math.random() * 12;
+  let t = 0;
+
+  function tryRise() {
+    t++;
+    const p  = Math.min(t / dur1, 1);
+    const e  = 1 - Math.pow(1 - p, 3); // ease-out cubic
+    const ep = e * reach;               // scaled to reach%
+
+    const cx = fromX + (toX - fromX) * ep;
+    const cy = fromY + (toY - fromY) * ep;
+    el.style.left      = cx + 'px';
+    el.style.top       = cy + 'px';
+    el.style.transform = `translate(-50%,-50%) rotate(${(fromAngle * (1 - ep)).toFixed(1)}deg)`;
+
+    if (t < dur1) {
+      requestAnimationFrame(tryRise);
+    } else {
+      fallBack(cx, cy, fromAngle * (1 - ep));
+    }
+  }
+
+  // Phase 2: letter ran out of energy — gravity takes it back down
+  function fallBack(startX, startY, peakAngle) {
+    const floor = window.innerHeight - 10;
+    // Small residual velocity toward origin so it strains briefly before dropping
+    const remainDx = toX - startX;
+    const remainDy = toY - startY;
+    const remainDist = Math.max(Math.sqrt(remainDx * remainDx + remainDy * remainDy), 1);
+    let vx = (remainDx / remainDist) * 1.2;
+    let vy = (remainDy / remainDist) * 1.2;
+    let cx = startX, cy = startY;
+
+    function falling() {
+      vy += 0.35;
+      cx += vx;
+      cy += vy;
+      vx *= 0.97;
+
+      const tilt = peakAngle + vy * 2.5;
+      el.style.left      = cx + 'px';
+      el.style.top       = cy + 'px';
+      el.style.transform = `translate(-50%,-50%) rotate(${tilt.toFixed(1)}deg)`;
+
+      if (cy < floor) {
+        requestAnimationFrame(falling);
+      } else {
+        el.style.top       = floor + 'px';
+        el.style.transform = `translate(-50%,-50%) rotate(${(peakAngle + 20).toFixed(1)}deg)`;
+      }
+    }
+    requestAnimationFrame(falling);
+  }
+
+  requestAnimationFrame(tryRise);
+}
 </script>
 </body>
 </html>
