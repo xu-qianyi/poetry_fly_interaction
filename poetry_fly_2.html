@@ -11,14 +11,10 @@
   :root {
     --ink: #ffffff;
     --ink-faint: rgba(255,255,255,0.45);
-    --ink-ghost: rgba(255,255,255,0.2);
     --paper: #002FA7;
-    --panel: #002FA7;
-    --border: rgba(255,255,255,0.12);
-    --border-mid: rgba(255,255,255,0.22);
   }
 
-  html, body { height: 100%; background: var(--panel); color: var(--ink); font-family: 'Cormorant Garamond', Georgia, serif; }
+  html, body { height: 100%; background: var(--paper); color: var(--ink); font-family: 'Cormorant Garamond', Georgia, serif; }
 
   #shell { display: flex; height: 100vh; overflow: hidden; }
 
@@ -38,7 +34,6 @@
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 0;
     position: relative;
     z-index: 2;
   }
@@ -186,32 +181,25 @@
     background: rgba(255,255,255,0.11);
   }
 
-  .dropdown-divider {
-    height: 0.5px;
-    background: rgba(255,255,255,0.1);
-    margin: 0.6rem 0;
-  }
-
   #reset-btn {
-    display: block;
-    width: 100%;
+    position: fixed;
+    bottom: 1.8rem;
+    right: 2.2rem;
     font-family: 'DM Sans', sans-serif;
     font-weight: 300;
-    font-size: 10px;
+    font-size: 11px;
     letter-spacing: 0.16em;
     text-transform: uppercase;
     background: none;
     border: none;
-    border-radius: 999px;
-    color: rgba(255,255,255,0.55);
+    color: rgba(255,255,255,0.4);
     cursor: pointer;
-    padding: 5px 8px;
-    text-align: left;
-    transition: color 0.15s, background 0.15s;
+    padding: 6px 0;
+    transition: color 0.2s;
+    z-index: 300;
   }
   #reset-btn:hover {
-    color: rgba(255,255,255,0.9);
-    background: rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.85);
   }
 
 
@@ -253,12 +241,11 @@
   <button class="mode-btn" data-mode="blossom" role="menuitem">blossom</button>
   <button class="mode-btn" data-mode="ripple" role="menuitem">ripple</button>
   <button class="mode-btn" data-mode="curious" role="menuitem">curious</button>
-  <div class="dropdown-divider"></div>
-  <button id="reset-btn">reset</button>
 </div>
+
+<button id="reset-btn">reset</button>
 <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
 <script>
-// Langston Hughes — April Rain Song (1921)
 const poems = {
   breakfree: [
     ["The", "passion", "for", "butterflies", "is", "not", "easily", "explained."],
@@ -520,7 +507,6 @@ function renderPoem() {
       span.dataset.word = word;
       span.dataset.gone = '0';
       span.addEventListener('mouseenter', onInteract);
-      span.addEventListener('click', onInteract);
       wrap.appendChild(span);
       lineEl.appendChild(wrap);
     });
@@ -529,8 +515,6 @@ function renderPoem() {
 }
 
 function onInteract(e) {
-  if (e.type !== 'mouseenter') return;
-
   const span = e.currentTarget;
 
   if (currentMode === 'breakfree') {
@@ -573,8 +557,9 @@ function onInteract(e) {
 let raining    = false;
 let crumbling  = false;
 let restoring  = false;
-const pileHeights = {}; // x-bucket → current pile top (px from viewport top)
-const PILE_BUCKET = 20; // column width for stacking
+const pileHeights   = {};
+const PILE_BUCKET   = 20;
+const letterOrigins = new WeakMap(); // letter el → { x, y }
 
 function cascadeRain() {
   if (raining) return;
@@ -606,7 +591,7 @@ function cascadeRain() {
   if (currentRow.length) rows.push(currentRow);
 
   rows.forEach((row, rowIdx) => {
-    row.forEach(({ span, rect }, wordIdx) => {
+    row.forEach(({ span, rect }) => {
       // Row delay grows with row index — upper rows fall first
       // Word delay: tiny random scatter within a row
       const rowDelay  = rowIdx * 80;
@@ -678,8 +663,9 @@ function launchButterfly(left, right, cx, cy) {
   lEl.style.visibility = rEl.style.visibility = 'hidden';
   document.body.appendChild(lEl);
   document.body.appendChild(rEl);
-  const lW = lEl.getBoundingClientRect().width;
-  const h  = lEl.getBoundingClientRect().height;
+  const lRect = lEl.getBoundingClientRect();
+  const lW = lRect.width;
+  const h  = lRect.height;
   lEl.style.visibility = rEl.style.visibility = '';
 
   // Left half: inner edge = right side → pivot at (lW, h/2) within element
@@ -793,18 +779,8 @@ function splashRain(x, y) {
   }
 }
 
-/* ── BLOSSOM ──
-   Word disappears; a soft round flower blooms in its exact place and stays.
-   No stroke. Petals are wide oval lobes — rounder control points.
-   Colors: light spring palette.
-*/
-const blossomColors = [
-  '#ffffff','#ffffff','#ffffff','#ffffff',
-  '#ffffff','#ffffff','#ffffff','#ffffff',
-  '#ffffff','#ffffff','#ffffff','#ffffff',
-];
-
-function makeBlossom(color, size) {
+/* ── BLOSSOM ── */
+function makeBlossom(size) {
   const ns  = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg');
   const dim = size * 7;
@@ -861,9 +837,8 @@ function makeBlossom(color, size) {
 }
 
 function placeBlossom(x, y) {
-  const color = blossomColors[Math.floor(Math.random() * blossomColors.length)];
-  const size  = 6 + Math.random() * 6;   // slightly larger, rounder
-  const svg   = makeBlossom(color, size);
+  const size = 6 + Math.random() * 6;
+  const svg  = makeBlossom(size);
   const half  = (size * 6) / 2;
   const rot   = Math.random() * 360;
 
@@ -1236,8 +1211,7 @@ function launchCrumbleLetter(letter, x, y) {
   const el = document.createElement('div');
   el.className   = 'fly-particle crumble-letter';
   el.textContent = letter;
-  el._originX    = x;
-  el._originY    = y;
+  letterOrigins.set(el, { x, y });
   el.style.left      = x + 'px';
   el.style.top       = y + 'px';
   el.style.transform = 'translate(-50%,-50%)';
@@ -1432,8 +1406,7 @@ function attemptRestore() {
 function attemptLetterRise(el) {
   const fromX = parseFloat(el.style.left);
   const fromY = parseFloat(el.style.top);
-  const toX   = el._originX;
-  const toY   = el._originY;
+  const { x: toX, y: toY } = letterOrigins.get(el);
   const fromAngle = parseFloat(
     (el.style.transform.match(/rotate\(([-\d.]+)/) ?? ['', '0'])[1]
   );
