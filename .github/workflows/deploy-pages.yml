@@ -27,6 +27,9 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Remove node_modules
+        run: rm -rf poetry_fly_p5/node_modules
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
