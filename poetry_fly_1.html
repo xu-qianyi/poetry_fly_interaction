@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Death of the Moth — Virginia Woolf</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #002FA7;
+    --ink-faint: #6685c9;
+    --ink-ghost: rgba(0,47,167,0.2);
+    --paper: #ffffff;
+    --panel: #f5f5f5;
+    --border: rgba(0,47,167,0.12);
+    --border-mid: rgba(0,47,167,0.22);
+  }
+
+  html, body { height: 100%; background: var(--panel); color: var(--ink); font-family: 'Caveat', cursive; }
+
+  #shell { display: flex; height: 100vh; overflow: hidden; }
+
+  /* ── Paper ── */
+  #paper {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--paper);
+    display: flex;
+    justify-content: center;
+  }
+
+  #poem-display {
+    padding: 4rem 3rem 5rem;
+    max-width: 560px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .poem-title {
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    margin-bottom: 3rem;
+    font-style: italic;
+    line-height: 1.8;
+  }
+
+  .poem-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    line-height: 1;
+    margin-bottom: 0.55rem;
+  }
+  .poem-line.spacer { height: 1.1rem; margin-bottom: 0; }
+  .word-wrap { display: inline-flex; align-items: baseline; }
+  .word-part {
+    display: inline-block;
+    font-size: 22px;
+    line-height: 1.65;
+    color: var(--ink);
+    font-family: 'Caveat', cursive;
+    cursor: default;
+    user-select: none;
+    white-space: pre;
+  }
+
+  /* ── Panel ── */
+  #panel {
+    width: 188px;
+    flex-shrink: 0;
+    background: var(--panel);
+    border-left: 0.5px solid var(--border-mid);
+    display: flex;
+    flex-direction: column;
+    padding: 2.4rem 1.4rem;
+    gap: 2.2rem;
+  }
+
+  .panel-section { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .panel-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 0.3rem;
+  }
+
+  .mode-btn {
+    font-family: 'Caveat', cursive;
+    font-size: 17px;
+    padding: 5px 0;
+    border: none;
+    border-bottom: 0.5px solid var(--border);
+    background: transparent;
+    color: var(--ink-faint);
+    cursor: pointer;
+    text-align: left;
+    line-height: 1.5;
+    transition: color 0.15s;
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+  }
+  .mode-btn:last-child { border-bottom: none; }
+  .mode-btn:hover { color: var(--ink); }
+  .mode-btn.active { color: var(--ink); font-style: italic; }
+  .mode-btn .mode-tag {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    font-style: normal;
+    color: var(--ink-faint);
+    opacity: 0.6;
+  }
+  .mode-btn.active .mode-tag { opacity: 1; }
+  .mode-btn.coming { opacity: 0.38; cursor: default; }
+
+  #reset-btn {
+    font-family: 'Caveat', cursive;
+    font-size: 16px;
+    padding: 5px 10px;
+    border: 0.5px solid var(--border-mid);
+    border-radius: 1px;
+    background: transparent;
+    color: var(--ink-faint);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    text-align: center;
+    letter-spacing: 0.04em;
+    width: 100%;
+  }
+  #reset-btn:hover { color: var(--ink); border-color: var(--ink-ghost); }
+
+  .panel-hint {
+    margin-top: auto;
+    font-size: 11px;
+    color: var(--ink-faint);
+    font-style: italic;
+    line-height: 1.7;
+  }
+
+  /* ── Particles ── */
+  .fly-particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    font-family: 'Caveat', cursive;
+    font-size: 22px;
+    color: var(--ink);
+    white-space: pre;
+    will-change: transform, opacity;
+  }
+</style>
+</head>
+<body>
+<div id="shell">
+
+  <div id="paper">
+    <div id="poem-display"></div>
+  </div>
+
+  <div id="panel">
+    <div class="panel-section">
+      <span class="panel-label">interaction</span>
+      <button class="mode-btn active" onclick="setMode('butterfly')">
+        butterfly <span class="mode-tag">now</span>
+      </button>
+      <button class="mode-btn" onclick="setMode('rain')">
+        rain <span class="mode-tag">new</span>
+      </button>
+      <button class="mode-btn" onclick="setMode('blossom')">
+        blossom <span class="mode-tag">new</span>
+      </button>
+    </div>
+
+    <div class="panel-section">
+      <span class="panel-label">page</span>
+      <button id="reset-btn" onclick="resetPoem()">reset</button>
+    </div>
+
+    <p class="panel-hint" id="hint-text">hover the words —<br>long words split into wings,<br>short words dart like bees.</p>
+  </div>
+
+</div>
+<script>
+// Langston Hughes — April Rain Song (1921)
+const poems = {
+  butterfly: [
+    ["The", "passion", "for", "butterflies", "is", "not", "easily", "explained."],
+    ["It", "begins,", "perhaps,", "as", "most", "passions", "do,"],
+    ["in", "a", "shimmer", "of", "colour", "seen", "at", "the", "edge", "of", "a", "wood,"],
+    ["in", "a", "winged", "thing", "crossing", "a", "sunlit", "glade."],
+    [],
+    ["From", "the", "age", "of", "seven,", "everything", "in", "nature"],
+    ["seemed", "to", "vibrate", "with", "a", "secret", "meaning"],
+    ["that", "my", "parents", "could", "not", "explain."],
+    ["The", "iridescent", "wings", "of", "a", "Camberwell", "Beauty"],
+    ["settling", "on", "a", "thistle", "head"],
+    ["were", "more", "real", "to", "me", "than", "anything", "I", "was", "taught."],
+    [],
+    ["I", "learned", "the", "names:", "Parnassius,", "Colias,", "Lycaena."],
+    ["Each", "name", "was", "a", "door", "opening", "into", "a", "bright", "corridor."],
+    ["To", "know", "the", "name", "was", "to", "hold", "the", "creature", "still,"],
+    ["if", "only", "for", "a", "moment,", "in", "the", "amber", "of", "language."],
+    [],
+    ["But", "the", "butterfly", "itself", "always", "escaped."],
+    ["That", "was", "the", "lesson."],
+    ["The", "net", "sweeps", "through", "air,"],
+    ["the", "hand", "closes,"],
+    ["and", "the", "thing", "you", "wanted", "most"],
+    ["is", "already", "somewhere", "else,"],
+    ["tilting", "in", "the", "wind", "above", "the", "meadow."],
+    [],
+    ["There", "is", "a", "special", "rapture", "in", "the", "first", "sight"],
+    ["of", "a", "species", "one", "has", "never", "encountered", "before."],
+    ["The", "amateur", "is", "luckier", "than", "the", "professional:"],
+    ["every", "butterfly", "is", "still", "a", "surprise."],
+    [],
+    ["I", "have", "hunted", "them", "on", "the", "cliffs", "of", "the", "Crimea,"],
+    ["in", "the", "flowering", "meadows", "of", "Normandy,"],
+    ["in", "the", "stunted", "growth", "of", "subalpine", "pastures,"],
+    ["where", "the", "air", "is", "so", "clear", "it", "seems", "to", "ring."],
+    [],
+    ["The", "butterfly", "does", "not", "know", "it", "is", "beautiful."],
+    ["It", "does", "not", "know", "anything."],
+    ["And", "yet", "the", "pattern", "on", "its", "wings—"],
+    ["those", "concentric", "circles,", "those", "streaks", "of", "blue", "and", "copper—"],
+    ["seems", "to", "have", "been", "placed", "there", "by", "a", "hand"],
+    ["that", "knew", "exactly", "what", "it", "was", "doing."],
+    [],
+    ["To", "pursue", "a", "butterfly", "is", "to", "follow", "a", "thought"],
+    ["that", "keeps", "dissolving", "before", "you", "can", "grasp", "it."],
+    ["The", "meadow", "opens.", "The", "sky", "is", "immense."],
+    ["Your", "net", "is", "ridiculous."],
+    ["You", "run."],
+  ],
+  blossom: [
+    ["Who", "made", "the", "world?"],
+    ["Who", "made", "the", "swan,", "and", "the", "black", "bear?"],
+    ["Who", "made", "the", "grasshopper?"],
+    ["This", "grasshopper,", "I", "mean—"],
+    ["the", "one", "who", "has", "flung", "herself", "out", "of", "the", "grass,"],
+    ["the", "one", "who", "is", "eating", "sugar", "out", "of", "my", "hand,"],
+    ["who", "is", "moving", "her", "jaws", "back", "and", "forth", "instead", "of", "up", "and", "down—"],
+    ["who", "is", "gazing", "around", "with", "her", "enormous", "and", "complicated", "eyes."],
+    [],
+    ["Now", "she", "lifts", "her", "pale", "forearms", "and", "thoroughly", "washes", "her", "face."],
+    ["Now", "she", "snaps", "her", "wings", "open,", "and", "floats", "away."],
+    [],
+    ["I", "don't", "know", "exactly", "what", "a", "prayer", "is."],
+    ["I", "do", "know", "how", "to", "pay", "attention,", "how", "to", "fall", "down"],
+    ["into", "the", "grass,", "how", "to", "kneel", "down", "in", "the", "grass,"],
+    ["how", "to", "be", "idle", "and", "blessed,", "how", "to", "stroll", "through", "the", "fields,"],
+    ["which", "is", "what", "I", "have", "been", "doing", "all", "day."],
+    [],
+    ["Tell", "me,", "what", "else", "should", "I", "have", "done?"],
+    ["Doesn't", "everything", "die", "at", "last,", "and", "too", "soon?"],
+    ["Tell", "me,", "what", "is", "it", "you", "plan", "to", "do"],
+    ["with", "your", "one", "wild", "and", "precious", "life?"],
+  ],
+    ["Let", "the", "rain", "kiss", "you."],
+    ["Let", "the", "rain", "beat", "upon", "your", "head", "with", "silver", "liquid", "drops."],
+    ["Let", "the", "rain", "sing", "you", "a", "lullaby."],
+    [],
+    ["The", "rain", "makes", "still", "pools", "on", "the", "sidewalk."],
+    ["The", "rain", "makes", "running", "pools", "in", "the", "gutter."],
+    ["The", "rain", "plays", "a", "little", "sleep-song", "on", "our", "roof", "at", "night—"],
+    [],
+    ["And", "I", "love", "the", "rain."],
+  ],
+};
+
+const titles = {
+  butterfly: 'Speak, Memory — Vladimir Nabokov, 1951',
+  rain:      'April Rain Song — Langston Hughes, 1921',
+  blossom:   'The Summer Day — Mary Oliver, 1990',
+};
+
+let currentMode = 'butterfly';
+
+const hints = {
+  butterfly: 'hover the words —<br>long words split into wings,<br>short words dart like bees.',
+  rain:      'click anywhere —<br>and let it all<br>come down.',
+  blossom:   'hover the words —<br>and watch them<br>bloom.',
+};
+
+function setMode(m) {
+  currentMode = m;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.mode-btn[onclick="setMode('${m}')"]`).classList.add('active');
+  document.getElementById('hint-text').innerHTML = hints[m];
+  resetPoem();
+}
+
+function resetPoem() { raining = false; renderPoem(); }
+
+function renderPoem() {
+  const display = document.getElementById('poem-display');
+  display.innerHTML = '';
+
+  const title = document.createElement('p');
+  title.className = 'poem-title';
+  title.textContent = titles[currentMode];
+  display.appendChild(title);
+
+  const currentPoem = poems[currentMode];
+  currentPoem.forEach(line => {
+    const lineEl = document.createElement('div');
+    if (line.length === 0) {
+      lineEl.className = 'poem-line spacer';
+      display.appendChild(lineEl);
+      return;
+    }
+    lineEl.className = 'poem-line';
+    line.forEach((word, wi) => {
+      const wrap = document.createElement('span');
+      wrap.className = 'word-wrap';
+      const span = document.createElement('span');
+      span.className = 'word-part';
+      span.textContent = word + (wi < line.length - 1 ? '\u00a0' : '');
+      span.dataset.word = word;
+      span.dataset.gone = '0';
+      span.addEventListener('mouseenter', onInteract);
+      span.addEventListener('click', onInteract);
+      wrap.appendChild(span);
+      lineEl.appendChild(wrap);
+    });
+    display.appendChild(lineEl);
+  });
+}
+
+function onInteract(e) {
+  if (currentMode === 'butterfly' && e.type !== 'mouseenter') return;
+  if (currentMode === 'rain'      && e.type !== 'click')      return;
+  if (currentMode === 'blossom'   && e.type !== 'mouseenter') return;
+
+  const span = e.currentTarget;
+
+  if (currentMode === 'butterfly') {
+    if (span.dataset.gone === '1') return;
+    span.dataset.gone = '1';
+    const word = span.dataset.word;
+    const clean = word.replace(/[^a-zA-Z]/g, '');
+    const rect = span.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    span.style.visibility = 'hidden';
+    if (clean.length <= 3) launchBee(clean, cx, cy);
+    else {
+      const parts = splitWord(clean);
+      if (parts) launchButterfly(parts[0], parts[1], cx, cy);
+      else launchBee(clean, cx, cy);
+    }
+
+  } else if (currentMode === 'rain') {
+    cascadeRain();
+
+  } else if (currentMode === 'blossom') {
+    const rect = span.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    launchBlossom(cx, cy);
+  }
+}
+
+let raining = false;
+
+function cascadeRain() {
+  if (raining) return;
+  raining = true;
+
+  // Collect all word spans in DOM order, each with its position
+  const allSpans = Array.from(
+    document.querySelectorAll('#poem-display .word-part')
+  );
+
+  // Group by approximate vertical position (row) so words on the same
+  // line start together, with a gentle stagger within each row
+  // and a longer delay between rows — like rain falling in sheets
+  const rows = [];
+  let currentRow = [];
+  let lastTop = null;
+
+  allSpans.forEach(span => {
+    const rect = span.getBoundingClientRect();
+    const top = Math.round(rect.top / 8) * 8; // bucket by 8px
+    if (lastTop === null || Math.abs(top - lastTop) < 12) {
+      currentRow.push({ span, rect });
+    } else {
+      rows.push(currentRow);
+      currentRow = [{ span, rect }];
+    }
+    lastTop = top;
+  });
+  if (currentRow.length) rows.push(currentRow);
+
+  rows.forEach((row, rowIdx) => {
+    row.forEach(({ span, rect }, wordIdx) => {
+      // Row delay grows with row index — upper rows fall first
+      // Word delay: tiny random scatter within a row
+      const rowDelay  = rowIdx * 80;
+      const wordJitter = Math.random() * 60;
+      const delay = rowDelay + wordJitter;
+
+      setTimeout(() => {
+        if (span.dataset.gone === '1') return;
+        span.dataset.gone = '1';
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        span.style.visibility = 'hidden';
+        launchRain(span.dataset.word, cx, cy);
+      }, delay);
+    });
+  });
+
+  // Re-enable after animation completes
+  const totalDuration = rows.length * 80 + 2000;
+  setTimeout(() => { raining = false; }, totalDuration);
+}
+
+function splitWord(clean) {
+  if (clean.length <= 4) return null;
+  const mid = Math.floor(clean.length / 2);
+  return [clean.slice(0, mid), clean.slice(mid)];
+}
+
+/* ── BEE ── */
+function launchBee(text, x, y) {
+  const el = document.createElement('div');
+  el.className = 'fly-particle';
+  el.textContent = text;
+  el.style.left = x + 'px';
+  el.style.top  = y + 'px';
+  el.style.transform = 'translate(-50%,-50%)';
+  document.body.appendChild(el);
+  const baseAngle = (Math.random() * 2 - 1) * Math.PI;
+  let vx = Math.cos(baseAngle) * 1.4, vy = Math.sin(baseAngle) * 1.4 - 0.5;
+  let bx = x, by = y, t = 0, wobble = Math.random() * 100;
+  function step() {
+    t++; wobble += 0.2;
+    vx += Math.sin(wobble * 1.5) * 0.15;
+    vy += Math.cos(wobble) * 0.1 - 0.012;
+    const spd = Math.sqrt(vx*vx + vy*vy);
+    if (spd > 2.8) { vx = vx/spd*2.8; vy = vy/spd*2.8; }
+    bx += vx; by += vy;
+    const opacity = Math.max(0, 1 - t / 160);
+    el.style.left = bx + 'px'; el.style.top = by + 'px';
+    el.style.transform = `translate(-50%,-50%) rotate(${Math.sin(wobble*0.7)*18}deg)`;
+    el.style.opacity = opacity;
+    if (opacity > 0.01) requestAnimationFrame(step); else el.remove();
+  }
+  requestAnimationFrame(step);
+}
+
+/* ── BUTTERFLY ──
+   Both halves pivot at their inner edge (the split point).
+   Left half drifts left, right half drifts right.
+   Each flaps around its inner edge: rotate ± angle.
+*/
+function launchButterfly(left, right, cx, cy) {
+  const lEl = document.createElement('div');
+  const rEl = document.createElement('div');
+  lEl.className = rEl.className = 'fly-particle';
+  lEl.textContent = left;
+  rEl.textContent = right;
+
+  lEl.style.visibility = rEl.style.visibility = 'hidden';
+  document.body.appendChild(lEl);
+  document.body.appendChild(rEl);
+  const lW = lEl.getBoundingClientRect().width;
+  const h  = lEl.getBoundingClientRect().height;
+  lEl.style.visibility = rEl.style.visibility = '';
+
+  // Left half: inner edge = right side → pivot at (lW, h/2) within element
+  // Right half: inner edge = left side → pivot at (0, h/2) within element
+  lEl.style.transformOrigin = 'right center';
+  rEl.style.transformOrigin = 'left center';
+
+  const driftSpeed = 1.0 + Math.random() * 0.5;
+  const driftUp    = 0.35 + Math.random() * 0.25;
+
+  let t = 0;
+  let lPivotX = cx, lPivotY = cy;
+  let rPivotX = cx, rPivotY = cy;
+
+  function step() {
+    t += 0.05;
+
+    lPivotX -= driftSpeed + Math.sin(t * 1.3) * 0.3;
+    lPivotY -= driftUp + Math.sin(t * 2.0) * 0.2;
+    rPivotX += driftSpeed + Math.sin(t * 1.1) * 0.3;
+    rPivotY -= driftUp + Math.sin(t * 1.8) * 0.2;
+
+    // Flap angle: oscillate ±25° around 0 — pure up/down wing beat
+    const flapAngle = Math.sin(t * 9) * 25;
+
+    const opacity = Math.max(0, 1 - t / 4.2);
+
+    // Left: pivot (right edge center) sits at lPivotX, lPivotY
+    lEl.style.left      = (lPivotX - lW) + 'px';
+    lEl.style.top       = (lPivotY - h / 2) + 'px';
+    lEl.style.transform = `rotate(${-flapAngle}deg)`;
+    lEl.style.opacity   = opacity;
+
+    // Right: pivot (left edge center) sits at rPivotX, rPivotY
+    rEl.style.left      = rPivotX + 'px';
+    rEl.style.top       = (rPivotY - h / 2) + 'px';
+    rEl.style.transform = `rotate(${flapAngle}deg)`;
+    rEl.style.opacity   = opacity;
+
+    if (opacity > 0.01) requestAnimationFrame(step);
+    else { lEl.remove(); rEl.remove(); }
+  }
+  requestAnimationFrame(step);
+}
+
+/* ── RAIN ──
+   Word falls from its position under gravity to the bottom of the viewport.
+   On impact it bursts into small dot droplets that scatter and fade.
+*/
+function launchRain(text, x, y) {
+  const el = document.createElement('div');
+  el.className = 'fly-particle';
+  el.textContent = text;
+  el.style.left = x + 'px';
+  el.style.top  = y + 'px';
+  el.style.transform = 'translate(-50%,-50%)';
+  document.body.appendChild(el);
+
+  const floor = window.innerHeight - 16;
+  let vy = 2.0 + Math.random() * 1.2;
+  let by = y;
+
+  function fall() {
+    vy += 0.5;
+    by += vy;
+    const wobbleX = Math.sin(by * 0.035) * 2.5;
+    el.style.left      = (x + wobbleX) + 'px';
+    el.style.top       = by + 'px';
+    el.style.transform = `translate(-50%,-50%) rotate(${wobbleX * 1.5}deg)`;
+    if (by < floor) {
+      requestAnimationFrame(fall);
+    } else {
+      el.remove();
+      splashRain(x + Math.sin(by * 0.035) * 2.5, floor);
+    }
+  }
+  requestAnimationFrame(fall);
+}
+
+function splashRain(x, y) {
+  const count = 7 + Math.floor(Math.random() * 4);
+  for (let i = 0; i < count; i++) {
+    const dot = document.createElement('div');
+    dot.style.cssText = `position:fixed;pointer-events:none;z-index:9999;
+      width:3px;height:3px;border-radius:50%;background:var(--ink);
+      left:${x}px;top:${y}px;transform:translate(-50%,-50%);`;
+    document.body.appendChild(dot);
+
+    const angle = Math.PI + (Math.random() - 0.5) * Math.PI * 0.85;
+    const speed = 1.8 + Math.random() * 3.5;
+    let vx = Math.cos(angle) * speed;
+    let vy = Math.sin(angle) * speed - 2;
+    let dx = x, dy = y, t = 0;
+
+    function dropStep() {
+      t++;
+      vy += 0.2;
+      dx += vx; dy += vy;
+      const opacity = Math.max(0, 1 - t / 30);
+      dot.style.left    = dx + 'px';
+      dot.style.top     = dy + 'px';
+      dot.style.opacity = opacity;
+      if (opacity > 0.01) requestAnimationFrame(dropStep); else dot.remove();
+    }
+    requestAnimationFrame(dropStep);
+  }
+}
+
+/* ── BLOSSOM ──
+   SVG hand-drawn flower blooms from the word, floats upward, fades.
+   5–6 petals, each a curved lobe. Light spring palette.
+*/
+const blossomColors = [
+  '#f9c6ce','#fddde6','#fce4a8','#faf0b4',
+  '#c8e6f9','#d4eaf7','#d8c9f0','#e8d5f5',
+  '#c5e8d0','#b8e4c8',
+];
+
+function petalPath(cx, cy, r, angle) {
+  const cos = Math.cos(angle), sin = Math.sin(angle);
+  const tx = cx + cos * r * 2.1,  ty = cy + sin * r * 2.1;
+  const c1x = cx + cos * r * 1.0 - sin * r * 0.72;
+  const c1y = cy + sin * r * 1.0 + cos * r * 0.72;
+  const c2x = cx + cos * r * 1.0 + sin * r * 0.72;
+  const c2y = cy + sin * r * 1.0 - cos * r * 0.72;
+  return `M${cx},${cy} C${c1x},${c1y} ${tx},${ty} ${tx},${ty} C${c2x},${c2y} ${cx},${cy} ${cx},${cy}`;
+}
+
+function makeBlossom(color, size) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  const dim = size * 5;
+  svg.setAttribute('width',  dim);
+  svg.setAttribute('height', dim);
+  svg.style.cssText = 'position:fixed;pointer-events:none;z-index:9998;overflow:visible;';
+
+  const cx = dim / 2, cy = dim / 2;
+  const n = 5 + Math.floor(Math.random() * 2);
+  const baseAngle = Math.random() * Math.PI * 2;
+
+  for (let i = 0; i < n; i++) {
+    const angle = baseAngle + (i / n) * Math.PI * 2;
+    const r = size * (0.68 + Math.random() * 0.28);
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', petalPath(cx, cy, r, angle));
+    path.setAttribute('fill', color);
+    path.setAttribute('stroke', '#1a1a18');
+    path.setAttribute('stroke-width', '1');
+    path.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(path);
+  }
+
+  const dot = document.createElementNS(ns, 'circle');
+  dot.setAttribute('cx', cx); dot.setAttribute('cy', cy);
+  dot.setAttribute('r', size * 0.24);
+  dot.setAttribute('fill', '#fffbe8');
+  dot.setAttribute('stroke', '#1a1a18');
+  dot.setAttribute('stroke-width', '0.8');
+  svg.appendChild(dot);
+  return svg;
+}
+
+function launchBlossom(x, y) {
+  const color = blossomColors[Math.floor(Math.random() * blossomColors.length)];
+  const size  = 5 + Math.random() * 7;
+  const svg   = makeBlossom(color, size);
+  const half  = size * 2.5;
+  const rot0  = Math.random() * 360;
+  const rotEnd = rot0 + (Math.random() - 0.5) * 45;
+  const driftX = (Math.random() - 0.5) * 55;
+  const driftY = -(28 + Math.random() * 48);
+
+  svg.style.left  = (x - half) + 'px';
+  svg.style.top   = (y - half) + 'px';
+  svg.style.transformOrigin = `${half}px ${half}px`;
+  svg.style.transform = `rotate(${rot0}deg) scale(0)`;
+  document.body.appendChild(svg);
+
+  let t = 0;
+  const bloomDur = 16, floatDur = 88;
+
+  function animate() {
+    t++;
+    if (t <= bloomDur) {
+      const ease = 1 - Math.pow(1 - t / bloomDur, 3);
+      svg.style.transform = `rotate(${rot0}deg) scale(${ease})`;
+    } else {
+      const p = (t - bloomDur) / floatDur;
+      svg.style.left    = (x - half + driftX * p) + 'px';
+      svg.style.top     = (y - half + driftY * p) + 'px';
+      svg.style.transform = `rotate(${rot0 + (rotEnd - rot0) * p}deg) scale(1)`;
+      svg.style.opacity = Math.max(0, 1 - p);
+      if (p >= 1) { svg.remove(); return; }
+    }
+    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+}
+
+renderPoem();
+</script>
+</body>
+</html>
