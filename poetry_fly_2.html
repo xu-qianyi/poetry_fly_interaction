@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Poems in Flight</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,400;1,500&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,400;1,500&family=DM+Sans:wght@300;400&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -80,86 +80,140 @@
     white-space: pre;
   }
 
-  /* ── Panel ── */
-  #panel {
-    width: 188px;
-    flex-shrink: 0;
-    background: transparent;
-    border-left: 0.5px solid var(--border-mid);
+  /* ── Floating menu trigger ── */
+  #menu-trigger {
+    position: fixed;
+    top: 1.8rem;
+    right: 2.2rem;
+    z-index: 300;
     display: flex;
-    flex-direction: column;
-    padding: 2.4rem 1.4rem;
-    gap: 2.2rem;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 999px;
+    cursor: pointer;
+    padding: 6px 18px 6px 16px;
+    color: rgba(255,255,255,0.55);
+    transition: color 0.2s, border-color 0.2s;
+  }
+  #menu-trigger:hover {
+    border-color: rgba(255,255,255,0.55);
+  }
+  #trigger-label {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-style: italic;
+    font-size: 13px;
+    letter-spacing: 0.03em;
+    color: #fff;
+  }
+  #trigger-arrow {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9px;
+    opacity: 0.5;
+    transition: transform 0.22s ease;
+    font-style: normal;
+    line-height: 1;
+  }
+  #menu-trigger.open #trigger-arrow { transform: rotate(180deg); }
+  #menu-trigger.open {
+    border-color: rgba(255,255,255,0.5);
+    color: rgba(255,255,255,0.9);
   }
 
-  .panel-section { display: flex; flex-direction: column; gap: 0.5rem; }
+  /* ── Dropdown panel ── */
+  #menu-dropdown {
+    position: fixed;
+    top: 4.4rem;
+    right: 2.2rem;
+    min-width: 158px;
+    background: rgba(0, 28, 138, 0.96);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 0.5px solid rgba(255,255,255,0.16);
+    border-radius: 16px;
+    padding: 1.1rem 1rem 0.9rem;
+    z-index: 299;
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+    transform-origin: top right;
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+  #menu-dropdown.open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
 
-  .panel-label {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 10px;
-    letter-spacing: 0.2em;
+  .dropdown-label {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 9px;
+    font-style: normal;
+    font-weight: 400;
+    letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: var(--ink-faint);
-    margin-bottom: 0.3rem;
+    color: rgba(255,255,255,0.28);
+    padding: 0 8px;
+    margin-bottom: 0.5rem;
   }
 
   .mode-btn {
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 300;
-    font-size: 14px;
-    padding: 5px 0;
+    display: block;
+    width: 100%;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 15px;
+    font-style: normal;
+    font-weight: 400;
+    padding: 5px 8px;
     border: none;
-    border-bottom: 0.5px solid var(--border);
+    border-radius: 999px;
     background: transparent;
-    color: var(--ink-faint);
+    color: rgba(255,255,255,0.78);
     cursor: pointer;
     text-align: left;
     line-height: 1.5;
-    transition: color 0.15s;
-    display: flex;
-    align-items: baseline;
-    gap: 7px;
+    letter-spacing: 0.01em;
+    transition: color 0.15s, background 0.15s;
   }
-  .mode-btn:last-child { border-bottom: none; }
-  .mode-btn:hover { color: var(--ink); }
-  .mode-btn.active { color: var(--ink); font-weight: 400; font-style: normal; }
-  .mode-btn .mode-tag {
-    font-size: 9px;
-    letter-spacing: 0.08em;
-    font-style: normal;
-    font-weight: 300;
-    color: var(--ink-faint);
-    opacity: 0.6;
+  .mode-btn:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.07);
   }
-  .mode-btn.active .mode-tag { opacity: 1; }
-  .mode-btn.coming { opacity: 0.38; cursor: default; }
+  .mode-btn.active {
+    color: #fff;
+    font-style: italic;
+    background: rgba(255,255,255,0.11);
+  }
+
+  .dropdown-divider {
+    height: 0.5px;
+    background: rgba(255,255,255,0.1);
+    margin: 0.6rem 0;
+  }
 
   #reset-btn {
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 300;
-    font-size: 13px;
-    padding: 5px 10px;
-    border: 0.5px solid var(--border-mid);
-    border-radius: 1px;
-    background: transparent;
-    color: var(--ink-faint);
-    cursor: pointer;
-    transition: color 0.15s, border-color 0.15s;
-    text-align: center;
-    letter-spacing: 0.04em;
+    display: block;
     width: 100%;
-  }
-  #reset-btn:hover { color: var(--ink); border-color: var(--ink-ghost); }
-
-  .panel-hint {
-    margin-top: auto;
     font-family: 'DM Sans', sans-serif;
     font-weight: 300;
-    font-size: 11px;
-    color: var(--ink-faint);
-    font-style: normal;
-    line-height: 1.7;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    background: none;
+    border: none;
+    border-radius: 999px;
+    color: rgba(255,255,255,0.55);
+    cursor: pointer;
+    padding: 5px 8px;
+    text-align: left;
+    transition: color 0.15s, background 0.15s;
   }
+  #reset-btn:hover {
+    color: rgba(255,255,255,0.9);
+    background: rgba(255,255,255,0.07);
+  }
+
 
   /* ── Particles ── */
   .fly-particle {
@@ -182,37 +236,25 @@
     <div id="poem-display"></div>
   </div>
 
-  <div id="panel">
-    <div class="panel-section">
-      <span class="panel-label">interaction</span>
-      <button class="mode-btn active" data-mode="breakfree">
-        moth
-      </button>
-      <button class="mode-btn" data-mode="magnet">
-        magnet
-      </button>
-      <button class="mode-btn" data-mode="crumble">
-        crumble
-      </button>
-      <button class="mode-btn" data-mode="drop">
-        drop
-      </button>
-      <button class="mode-btn" data-mode="blossom">
-        blossom
-      </button>
-      <button class="mode-btn" data-mode="ripple">
-        ripple
-      </button>
-    </div>
 
-    <div class="panel-section">
-      <span class="panel-label">page</span>
-      <button id="reset-btn">reset</button>
-    </div>
+</div>
 
-    <p class="panel-hint" id="hint-text">hover the words —<br>long words split into wings,<br>short words dart like bees.</p>
-  </div>
+<button id="menu-trigger" aria-haspopup="true" aria-expanded="false">
+  <span id="trigger-label">moth</span>
+  <span id="trigger-arrow">↓</span>
+</button>
 
+<div id="menu-dropdown" role="menu">
+  <div class="dropdown-label">interaction</div>
+  <button class="mode-btn active" data-mode="breakfree" role="menuitem">moth</button>
+  <button class="mode-btn" data-mode="magnet" role="menuitem">magnet</button>
+  <button class="mode-btn" data-mode="crumble" role="menuitem">crumble</button>
+  <button class="mode-btn" data-mode="drop" role="menuitem">drop</button>
+  <button class="mode-btn" data-mode="blossom" role="menuitem">blossom</button>
+  <button class="mode-btn" data-mode="ripple" role="menuitem">ripple</button>
+  <button class="mode-btn" data-mode="curious" role="menuitem">curious</button>
+  <div class="dropdown-divider"></div>
+  <button id="reset-btn">reset</button>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
 <script>
@@ -363,6 +405,35 @@ const poems = {
     ["as", "a", "guide", "from", "beyond."],
   ],
 
+  curious: [
+    ["Just", "off", "the", "highway", "to", "Rochester,", "Minnesota,"],
+    ["Twilight", "bounds", "softly", "forth", "on", "the", "grass."],
+    ["And", "the", "eyes", "of", "those", "two", "Indian", "ponies"],
+    ["Darken", "with", "kindness."],
+    ["They", "have", "come", "gladly", "out", "of", "the", "willows"],
+    ["To", "welcome", "my", "friend", "and", "me."],
+    ["We", "step", "over", "the", "barbed", "wire", "into", "the", "pasture"],
+    ["Where", "they", "have", "been", "grazing", "all", "day,", "alone."],
+    ["They", "ripple", "tensely,", "they", "can", "hardly", "contain", "their", "happiness"],
+    ["That", "we", "have", "come."],
+    ["They", "bow", "shyly", "as", "wet", "swans.", "They", "love", "each", "other."],
+    ["There", "is", "no", "loneliness", "like", "theirs."],
+    [],
+    ["At", "home", "once", "more,"],
+    ["They", "begin", "munching", "the", "young", "tufts", "of", "spring", "in", "the", "darkness."],
+    ["I", "would", "like", "to", "hold", "the", "slenderer", "one", "in", "my", "arms,"],
+    ["For", "she", "has", "walked", "over", "to", "me"],
+    ["And", "nuzzled", "my", "left", "hand."],
+    [],
+    ["She", "is", "black", "and", "white,"],
+    ["Her", "mane", "falls", "wild", "on", "her", "forehead,"],
+    ["And", "the", "light", "breeze", "moves", "me", "to", "caress", "her", "long", "ear"],
+    ["That", "is", "delicate", "as", "the", "skin", "over", "a", "girl's", "wrist."],
+    ["Suddenly", "I", "realize"],
+    ["That", "if", "I", "stepped", "out", "of", "my", "body", "I", "would", "break"],
+    ["Into", "blossom."],
+  ],
+
   crumble: [
     ["The", "struggle", "was", "over."],
     ["The", "insignificant", "little", "creature", "now", "knew", "death."],
@@ -387,27 +458,23 @@ const titles = {
   ripple:    'The Guest House — Rumi, 13th century',
   magnet:   'Tonight I Can Write — Pablo Neruda, 1924',
   crumble:  'The Death of the Moth — Virginia Woolf, 1942',
+  curious:  'A Blessing — James Wright, 1963',
 };
 
-const hints = {
-  breakfree: 'hover the words —<br>long words split into wings,<br>short words dart like bees.',
-  drop:      'hover anywhere —<br>and let it all<br>come down.',
-  blossom:   'hover the words —<br>and watch them<br>bloom.',
-  ripple:    'hover the words —<br>and let them<br>ripple.',
-  magnet:   'move your cursor —<br>words are drawn<br>toward you.',
-  crumble:  'hover anywhere —<br>the poem crumbles<br>from the end.',
-};
 
 function setMode(m) {
   if (currentMode === 'ripple'  && m !== 'ripple')  destroyRipple();
   if (currentMode === 'magnet' && m !== 'magnet') destroyMagnet();
+  if (currentMode === 'curious' && m !== 'curious') destroyCurious();
   currentMode = m;
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
   document.querySelector(`.mode-btn[data-mode="${m}"]`).classList.add('active');
-  document.getElementById('hint-text').innerHTML = hints[m];
+  document.getElementById('trigger-label').textContent =
+    document.querySelector(`.mode-btn[data-mode="${m}"]`).textContent.trim();
   resetPoem();
   if (m === 'ripple')  setTimeout(initRipple,  50);
   if (m === 'magnet') setTimeout(initMagnet, 50);
+  if (m === 'curious') setTimeout(initCurious, 50);
 }
 
 function resetPoem() {
@@ -419,9 +486,11 @@ function resetPoem() {
   document.querySelectorAll('.crumble-letter').forEach(el => el.remove());
   if (currentMode === 'ripple')  destroyRipple();
   if (currentMode === 'magnet') destroyMagnet();
+  if (currentMode === 'curious') destroyCurious();
   renderPoem();
   if (currentMode === 'ripple')  setTimeout(initRipple,  50);
   if (currentMode === 'magnet') setTimeout(initMagnet, 50);
+  if (currentMode === 'curious') setTimeout(initCurious, 50);
 }
 
 function renderPoem() {
@@ -1208,11 +1277,131 @@ function launchCrumbleLetter(letter, x, y) {
   requestAnimationFrame(fall);
 }
 
-// Bind buttons
+/* ── CURIOUS ──
+   Words rotate in place toward the cursor — like animals turning to look.
+   Each word has its own boldness; bolder words lean further.
+   Inside the comfort zone they tilt away (looking away shyly).
+   No translation: the poem stays readable, only posture changes.
+*/
+let curiousActive    = false;
+let curiousRafId     = null;
+let curiousMouse     = { x: -9999, y: -9999 };
+let curiousParticles = [];
+
+const C_RADIUS     = 175;  // sensing distance
+const C_COMFORT    = 68;   // too-close threshold
+const C_MAX_LEAN   = 26;   // max rotation degrees toward cursor
+const C_AWAY_LEAN  = 14;   // max rotation degrees away when too close
+const C_SMOOTH     = 0.07; // interpolation speed (lower = lazier)
+
+function initCurious() {
+  curiousActive = true;
+  curiousParticles = [];
+  document.querySelectorAll('#poem-display .word-part').forEach(span => {
+    const rect = span.getBoundingClientRect();
+    curiousParticles.push({
+      span,
+      ox: rect.left + rect.width  / 2,
+      oy: rect.top  + rect.height / 2,
+      boldness: 0.45 + Math.random() * 0.55,
+      angle: 0,
+      scale: 1,
+    });
+    span.style.display         = 'inline-block';
+    span.style.transition      = 'none';
+    span.style.transformOrigin = 'center bottom';
+  });
+  document.addEventListener('mousemove',  onCuriousMouse);
+  document.addEventListener('mouseleave', onCuriousLeave);
+  curiousRafId = requestAnimationFrame(tickCurious);
+}
+
+function destroyCurious() {
+  curiousActive = false;
+  if (curiousRafId) { cancelAnimationFrame(curiousRafId); curiousRafId = null; }
+  document.removeEventListener('mousemove',  onCuriousMouse);
+  document.removeEventListener('mouseleave', onCuriousLeave);
+  curiousParticles.forEach(p => {
+    p.span.style.transform      = '';
+    p.span.style.transformOrigin = '';
+  });
+  curiousParticles = [];
+}
+
+function onCuriousMouse(e) { curiousMouse.x = e.clientX; curiousMouse.y = e.clientY; }
+function onCuriousLeave()  { curiousMouse.x = -9999;     curiousMouse.y = -9999; }
+
+function tickCurious() {
+  if (!curiousActive) return;
+  const mx = curiousMouse.x;
+  const my = curiousMouse.y;
+
+  curiousParticles.forEach(p => {
+    const toMx = mx - p.ox;
+    const toMy = my - p.oy;
+    const dist  = Math.sqrt(toMx * toMx + toMy * toMy) + 0.001;
+
+    // Horizontal lean direction: right = clockwise, left = counterclockwise
+    const hDir = toMx / dist;
+
+    let targetAngle = 0;
+    let targetScale = 1;
+
+    if (dist < C_COMFORT) {
+      // Too close — tilt away, shrink slightly
+      const away = 1 - dist / C_COMFORT;
+      targetAngle = -hDir * C_AWAY_LEAN * away;
+      targetScale = 1 - 0.06 * away;
+    } else if (dist < C_RADIUS) {
+      // In range — lean toward cursor; peaks at midpoint
+      const t        = (dist - C_COMFORT) / (C_RADIUS - C_COMFORT);
+      const envelope = Math.sin(t * Math.PI);
+      targetAngle = hDir * C_MAX_LEAN * envelope * p.boldness;
+      targetScale = 1 + 0.06 * envelope * p.boldness;
+    }
+
+    p.angle += (targetAngle - p.angle) * C_SMOOTH;
+    p.scale += (targetScale - p.scale) * C_SMOOTH;
+
+    p.span.style.transform = `rotate(${p.angle.toFixed(2)}deg) scale(${p.scale.toFixed(3)})`;
+  });
+
+  curiousRafId = requestAnimationFrame(tickCurious);
+}
+
+// Bind mode buttons
 document.querySelectorAll('.mode-btn').forEach(btn => {
-  btn.addEventListener('click', () => setMode(btn.dataset.mode));
+  btn.addEventListener('click', () => {
+    setMode(btn.dataset.mode);
+    closeMenu();
+  });
 });
 document.getElementById('reset-btn').addEventListener('click', resetPoem);
+
+// Dropdown open / close
+const menuTrigger  = document.getElementById('menu-trigger');
+const menuDropdown = document.getElementById('menu-dropdown');
+
+function openMenu() {
+  menuTrigger.classList.add('open');
+  menuTrigger.setAttribute('aria-expanded', 'true');
+  menuDropdown.classList.add('open');
+}
+
+function closeMenu() {
+  menuTrigger.classList.remove('open');
+  menuTrigger.setAttribute('aria-expanded', 'false');
+  menuDropdown.classList.remove('open');
+}
+
+menuTrigger.addEventListener('click', (e) => {
+  e.stopPropagation();
+  menuDropdown.classList.contains('open') ? closeMenu() : openMenu();
+});
+
+document.addEventListener('click', (e) => {
+  if (!menuDropdown.contains(e.target) && e.target !== menuTrigger) closeMenu();
+});
 
 
 renderPoem();
