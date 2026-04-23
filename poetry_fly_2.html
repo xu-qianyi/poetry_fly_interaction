@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Death of the Moth — Virginia Woolf</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,400;1,500&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #ffffff;
+    --ink-faint: rgba(255,255,255,0.45);
+    --ink-ghost: rgba(255,255,255,0.2);
+    --paper: #002FA7;
+    --panel: #002FA7;
+    --border: rgba(255,255,255,0.12);
+    --border-mid: rgba(255,255,255,0.22);
+  }
+
+  html, body { height: 100%; background: var(--panel); color: var(--ink); font-family: 'Cormorant Garamond', Georgia, serif; }
+
+  #shell { display: flex; height: 100vh; overflow: hidden; }
+
+  /* ── Paper ── */
+  #paper {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--paper);
+    display: flex;
+    justify-content: center;
+    position: relative;
+  }
+
+  #poem-display {
+    padding: 4rem 3rem 5rem;
+    max-width: 560px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  #ripple-canvas-host {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .poem-title {
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    margin-bottom: 3rem;
+    font-style: italic;
+    line-height: 1.8;
+  }
+
+  .poem-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    line-height: 1;
+    margin-bottom: 0.55rem;
+  }
+  .poem-line.spacer { height: 1.1rem; margin-bottom: 0; }
+  .word-wrap { display: inline-flex; align-items: baseline; }
+  .word-part {
+    display: inline-block;
+    font-size: 21px;
+    font-style: italic;
+    line-height: 1.65;
+    color: var(--ink);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    cursor: default;
+    user-select: none;
+    white-space: pre;
+  }
+
+  /* ── Panel ── */
+  #panel {
+    width: 188px;
+    flex-shrink: 0;
+    background: transparent;
+    border-left: 0.5px solid var(--border-mid);
+    display: flex;
+    flex-direction: column;
+    padding: 2.4rem 1.4rem;
+    gap: 2.2rem;
+  }
+
+  .panel-section { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .panel-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 0.3rem;
+  }
+
+  .mode-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-size: 14px;
+    padding: 5px 0;
+    border: none;
+    border-bottom: 0.5px solid var(--border);
+    background: transparent;
+    color: var(--ink-faint);
+    cursor: pointer;
+    text-align: left;
+    line-height: 1.5;
+    transition: color 0.15s;
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+  }
+  .mode-btn:last-child { border-bottom: none; }
+  .mode-btn:hover { color: var(--ink); }
+  .mode-btn.active { color: var(--ink); font-weight: 400; font-style: normal; }
+  .mode-btn .mode-tag {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    font-style: normal;
+    font-weight: 300;
+    color: var(--ink-faint);
+    opacity: 0.6;
+  }
+  .mode-btn.active .mode-tag { opacity: 1; }
+  .mode-btn.coming { opacity: 0.38; cursor: default; }
+
+  #reset-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-size: 13px;
+    padding: 5px 10px;
+    border: 0.5px solid var(--border-mid);
+    border-radius: 1px;
+    background: transparent;
+    color: var(--ink-faint);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    text-align: center;
+    letter-spacing: 0.04em;
+    width: 100%;
+  }
+  #reset-btn:hover { color: var(--ink); border-color: var(--ink-ghost); }
+
+  .panel-hint {
+    margin-top: auto;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-size: 11px;
+    color: var(--ink-faint);
+    font-style: normal;
+    line-height: 1.7;
+  }
+
+  /* ── Particles ── */
+  .fly-particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-style: italic;
+    font-size: 21px;
+    color: var(--ink);
+    white-space: pre;
+    will-change: transform, opacity;
+  }
+</style>
+</head>
+<body>
+<div id="shell">
+
+  <div id="paper">
+    <div id="poem-display"></div>
+  </div>
+
+  <div id="panel">
+    <div class="panel-section">
+      <span class="panel-label">interaction</span>
+      <button class="mode-btn active" data-mode="breakfree">
+        break and free
+      </button>
+      <button class="mode-btn" data-mode="drop">
+        drop
+      </button>
+      <button class="mode-btn" data-mode="blossom">
+        blossom
+      </button>
+      <button class="mode-btn" data-mode="ripple">
+        ripple
+      </button>
+      <button class="mode-btn" data-mode="magnet">
+        magnet
+      </button>
+    </div>
+
+    <div class="panel-section">
+      <span class="panel-label">page</span>
+      <button id="reset-btn">reset</button>
+    </div>
+
+    <p class="panel-hint" id="hint-text">hover the words —<br>long words split into wings,<br>short words dart like bees.</p>
+  </div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+<script>
+// Langston Hughes — April Rain Song (1921)
+const poems = {
+  breakfree: [
+    ["The", "passion", "for", "butterflies", "is", "not", "easily", "explained."],
+    ["It", "begins,", "perhaps,", "as", "most", "passions", "do,"],
+    ["in", "a", "shimmer", "of", "colour", "seen", "at", "the", "edge", "of", "a", "wood,"],
+    ["in", "a", "winged", "thing", "crossing", "a", "sunlit", "glade."],
+    [],
+    ["From", "the", "age", "of", "seven,", "everything", "in", "nature"],
+    ["seemed", "to", "vibrate", "with", "a", "secret", "meaning"],
+    ["that", "my", "parents", "could", "not", "explain."],
+    ["The", "iridescent", "wings", "of", "a", "Camberwell", "Beauty"],
+    ["settling", "on", "a", "thistle", "head"],
+    ["were", "more", "real", "to", "me", "than", "anything", "I", "was", "taught."],
+    [],
+    ["I", "learned", "the", "names:", "Parnassius,", "Colias,", "Lycaena."],
+    ["Each", "name", "was", "a", "door", "opening", "into", "a", "bright", "corridor."],
+    ["To", "know", "the", "name", "was", "to", "hold", "the", "creature", "still,"],
+    ["if", "only", "for", "a", "moment,", "in", "the", "amber", "of", "language."],
+    [],
+    ["But", "the", "butterfly", "itself", "always", "escaped."],
+    ["That", "was", "the", "lesson."],
+    ["The", "net", "sweeps", "through", "air,"],
+    ["the", "hand", "closes,"],
+    ["and", "the", "thing", "you", "wanted", "most"],
+    ["is", "already", "somewhere", "else,"],
+    ["tilting", "in", "the", "wind", "above", "the", "meadow."],
+    [],
+    ["There", "is", "a", "special", "rapture", "in", "the", "first", "sight"],
+    ["of", "a", "species", "one", "has", "never", "encountered", "before."],
+    ["The", "amateur", "is", "luckier", "than", "the", "professional:"],
+    ["every", "butterfly", "is", "still", "a", "surprise."],
+    [],
+    ["I", "have", "hunted", "them", "on", "the", "cliffs", "of", "the", "Crimea,"],
+    ["in", "the", "flowering", "meadows", "of", "Normandy,"],
+    ["in", "the", "stunted", "growth", "of", "subalpine", "pastures,"],
+    ["where", "the", "air", "is", "so", "clear", "it", "seems", "to", "ring."],
+    [],
+    ["The", "butterfly", "does", "not", "know", "it", "is", "beautiful."],
+    ["It", "does", "not", "know", "anything."],
+    ["And", "yet", "the", "pattern", "on", "its", "wings—"],
+    ["those", "concentric", "circles,", "those", "streaks", "of", "blue", "and", "copper—"],
+    ["seems", "to", "have", "been", "placed", "there", "by", "a", "hand"],
+    ["that", "knew", "exactly", "what", "it", "was", "doing."],
+    [],
+    ["To", "pursue", "a", "butterfly", "is", "to", "follow", "a", "thought"],
+    ["that", "keeps", "dissolving", "before", "you", "can", "grasp", "it."],
+    ["The", "meadow", "opens.", "The", "sky", "is", "immense."],
+    ["Your", "net", "is", "ridiculous."],
+    ["You", "run."],
+  ],
+  blossom: [
+    ["Who", "made", "the", "world?"],
+    ["Who", "made", "the", "swan,", "and", "the", "black", "bear?"],
+    ["Who", "made", "the", "grasshopper?"],
+    ["This", "grasshopper,", "I", "mean—"],
+    ["the", "one", "who", "has", "flung", "herself", "out", "of", "the", "grass,"],
+    ["the", "one", "who", "is", "eating", "sugar", "out", "of", "my", "hand,"],
+    ["who", "is", "moving", "her", "jaws", "back", "and", "forth", "instead", "of", "up", "and", "down—"],
+    ["who", "is", "gazing", "around", "with", "her", "enormous", "and", "complicated", "eyes."],
+    [],
+    ["Now", "she", "lifts", "her", "pale", "forearms", "and", "thoroughly", "washes", "her", "face."],
+    ["Now", "she", "snaps", "her", "wings", "open,", "and", "floats", "away."],
+    [],
+    ["I", "don't", "know", "exactly", "what", "a", "prayer", "is."],
+    ["I", "do", "know", "how", "to", "pay", "attention,", "how", "to", "fall", "down"],
+    ["into", "the", "grass,", "how", "to", "kneel", "down", "in", "the", "grass,"],
+    ["how", "to", "be", "idle", "and", "blessed,", "how", "to", "stroll", "through", "the", "fields,"],
+    ["which", "is", "what", "I", "have", "been", "doing", "all", "day."],
+    [],
+    ["Tell", "me,", "what", "else", "should", "I", "have", "done?"],
+    ["Doesn't", "everything", "die", "at", "last,", "and", "too", "soon?"],
+    ["Tell", "me,", "what", "is", "it", "you", "plan", "to", "do"],
+    ["with", "your", "one", "wild", "and", "precious", "life?"],
+  ],
+  drop: [
+    ["I", "live", "my", "life", "in", "widening", "circles"],
+    ["that", "reach", "out", "across", "the", "world."],
+    ["I", "may", "not", "complete", "this", "last", "one"],
+    ["but", "I", "give", "myself", "to", "it."],
+    [],
+    ["I", "circle", "around", "God,", "around", "the", "primordial", "tower."],
+    ["I've", "been", "circling", "for", "thousands", "of", "years"],
+    ["and", "I", "still", "don't", "know:", "am", "I", "a", "falcon,"],
+    ["a", "storm,", "or", "a", "great", "song?"],
+    [],
+    ["I", "live", "my", "life", "in", "growing", "orbits"],
+    ["which", "move", "out", "over", "the", "things", "of", "the", "world."],
+    ["Perhaps", "I", "can", "never", "achieve", "the", "last,"],
+    ["but", "that", "will", "be", "my", "attempt."],
+    ["I", "am", "circling", "around", "God,", "around", "the", "ancient", "tower,"],
+    ["and", "I", "have", "been", "circling", "for", "a", "thousand", "years,"],
+    ["and", "I", "still", "do", "not", "know", "if", "I", "am", "an", "eagle", "or", "a", "storm"],
+    ["or", "a", "great", "song."],
+  ],
+  magnet: [
+    ["Tonight", "I", "can", "write", "the", "saddest", "lines."],
+    ["Write,", "for", "example,", "'The", "night", "is", "starry,"],
+    ["and", "the", "stars,", "blue,", "shiver", "in", "the", "distance.'"],
+    [],
+    ["The", "wind", "of", "the", "night", "rotates", "in", "the", "sky", "and", "sings."],
+    ["Tonight", "I", "can", "write", "the", "saddest", "lines."],
+    ["I", "loved", "her,", "and", "sometimes", "she", "loved", "me", "too."],
+    [],
+    ["Through", "nights", "like", "this", "one", "I", "held", "her", "in", "my", "arms."],
+    ["I", "kissed", "her", "again", "and", "again", "under", "the", "endless", "sky."],
+    ["She", "loved", "me,", "sometimes", "I", "loved", "her", "too."],
+    ["How", "could", "one", "not", "have", "loved", "her", "great", "still", "eyes."],
+    [],
+    ["Tonight", "I", "can", "write", "the", "saddest", "lines."],
+    ["To", "think", "that", "I", "do", "not", "have", "her.", "To", "feel", "that", "I", "have", "lost", "her."],
+    ["To", "hear", "the", "immense", "night,", "still", "more", "immense", "without", "her."],
+    ["And", "the", "verse", "falls", "to", "the", "soul", "like", "dew", "to", "the", "pasture."],
+    [],
+    ["What", "does", "it", "matter", "that", "my", "love", "could", "not", "keep", "her."],
+    ["The", "night", "is", "starry,", "and", "she", "is", "not", "with", "me."],
+    ["This", "is", "all.", "In", "the", "distance", "someone", "is", "singing.", "In", "the", "distance."],
+    ["My", "soul", "is", "not", "satisfied", "that", "it", "has", "lost", "her."],
+    [],
+    ["Though", "this", "be", "the", "last", "pain", "that", "she", "makes", "me", "suffer"],
+    ["and", "these", "the", "last", "verses", "that", "I", "write", "for", "her."],
+  ],
+  ripple: [
+    ["This", "human", "being", "is", "a", "guest", "house."],
+    ["Every", "morning", "a", "new", "arrival."],
+    [],
+    ["A", "joy,", "a", "depression,", "a", "meanness,"],
+    ["some", "momentary", "awareness", "comes"],
+    ["as", "an", "unexpected", "visitor."],
+    [],
+    ["Welcome", "and", "entertain", "them", "all!"],
+    ["Even", "if", "they're", "a", "crowd", "of", "sorrows,"],
+    ["who", "violently", "sweep", "your", "house"],
+    ["empty", "of", "its", "furniture,"],
+    ["still,", "treat", "each", "guest", "honorably."],
+    ["He", "may", "be", "clearing", "you", "out"],
+    ["for", "some", "new", "delight."],
+    [],
+    ["The", "dark", "thought,", "the", "shame,", "the", "malice,"],
+    ["meet", "them", "at", "the", "door", "laughing,"],
+    ["and", "invite", "them", "in."],
+    [],
+    ["Be", "grateful", "for", "whoever", "comes,"],
+    ["because", "each", "has", "been", "sent"],
+    ["as", "a", "guide", "from", "beyond."],
+  ],
+};
+
+let currentMode = 'breakfree';
+
+const titles = {
+  breakfree: 'Speak, Memory — Vladimir Nabokov, 1951',
+  drop:      'I Live My Life — Rainer Maria Rilke, 1905',
+  blossom:   'The Summer Day — Mary Oliver, 1990',
+  ripple:    'The Guest House — Rumi, 13th century',
+  magnet:   'Tonight I Can Write — Pablo Neruda, 1924',};
+
+const hints = {
+  breakfree: 'hover the words —<br>long words split into wings,<br>short words dart like bees.',
+  drop:      'hover anywhere —<br>and let it all<br>come down.',
+  blossom:   'hover the words —<br>and watch them<br>bloom.',
+  ripple:    'hover the words —<br>and let them<br>ripple.',
+  magnet:   'move your cursor —<br>words are drawn<br>toward you.',};
+
+function setMode(m) {
+  if (currentMode === 'ripple'  && m !== 'ripple')  destroyRipple();
+  if (currentMode === 'magnet' && m !== 'magnet') destroyMagnet();
+  currentMode = m;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.mode-btn[data-mode="${m}"]`).classList.add('active');
+  document.getElementById('hint-text').innerHTML = hints[m];
+  resetPoem();
+  if (m === 'ripple')  setTimeout(initRipple,  50);
+  if (m === 'magnet') setTimeout(initMagnet, 50);
+}
+
+function resetPoem() {
+  raining = false;
+  document.querySelectorAll('.blossom-svg').forEach(el => el.remove());
+  if (currentMode === 'ripple')  destroyRipple();
+  if (currentMode === 'magnet') destroyMagnet();
+  renderPoem();
+  if (currentMode === 'ripple')  setTimeout(initRipple,  50);
+  if (currentMode === 'magnet') setTimeout(initMagnet, 50);
+}
+
+function renderPoem() {
+  const display = document.getElementById('poem-display');
+  display.innerHTML = '';
+
+  const title = document.createElement('p');
+  title.className = 'poem-title';
+  title.textContent = titles[currentMode];
+  display.appendChild(title);
+
+  const currentPoem = poems[currentMode];
+  currentPoem.forEach(line => {
+    const lineEl = document.createElement('div');
+    if (line.length === 0) {
+      lineEl.className = 'poem-line spacer';
+      display.appendChild(lineEl);
+      return;
+    }
+    lineEl.className = 'poem-line';
+    line.forEach((word, wi) => {
+      const wrap = document.createElement('span');
+      wrap.className = 'word-wrap';
+      const span = document.createElement('span');
+      span.className = 'word-part';
+      span.textContent = word + (wi < line.length - 1 ? '\u00a0' : '');
+      span.dataset.word = word;
+      span.dataset.gone = '0';
+      span.addEventListener('mouseenter', onInteract);
+      span.addEventListener('click', onInteract);
+      wrap.appendChild(span);
+      lineEl.appendChild(wrap);
+    });
+    display.appendChild(lineEl);
+  });
+}
+
+function onInteract(e) {
+  if (e.type !== 'mouseenter') return;
+
+  const span = e.currentTarget;
+
+  if (currentMode === 'breakfree') {
+    if (span.dataset.gone === '1') return;
+    span.dataset.gone = '1';
+    const word  = span.dataset.word;
+    const clean = word.replace(/[^a-zA-Z]/g, '');
+    const rect  = span.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top  + rect.height / 2;
+    span.style.visibility = 'hidden';
+    if (clean.length <= 3) launchBee(clean, cx, cy);
+    else {
+      const parts = splitWord(clean);
+      if (parts) launchButterfly(parts[0], parts[1], cx, cy);
+      else launchBee(clean, cx, cy);
+    }
+
+  } else if (currentMode === 'drop') {
+    cascadeRain();
+
+  } else if (currentMode === 'blossom') {
+    if (span.dataset.gone === '1') return;
+    span.dataset.gone = '1';
+    const rect = span.getBoundingClientRect();
+    span.style.visibility = 'hidden';
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top  + rect.height / 2;
+    placeBlossom(cx, cy);
+
+  } else if (currentMode === 'ripple') {
+    launchRipple(span);
+  } else if (currentMode === 'magnet') {
+    // Magnet mode updates continuously from mouse movement.
+  }
+}
+
+let raining = false;
+
+function cascadeRain() {
+  if (raining) return;
+  raining = true;
+
+  // Collect all word spans in DOM order, each with its position
+  const allSpans = Array.from(
+    document.querySelectorAll('#poem-display .word-part')
+  );
+
+  // Group by approximate vertical position (row) so words on the same
+  // line start together, with a gentle stagger within each row
+  // and a longer delay between rows — like rain falling in sheets
+  const rows = [];
+  let currentRow = [];
+  let lastTop = null;
+
+  allSpans.forEach(span => {
+    const rect = span.getBoundingClientRect();
+    const top = Math.round(rect.top / 8) * 8; // bucket by 8px
+    if (lastTop === null || Math.abs(top - lastTop) < 12) {
+      currentRow.push({ span, rect });
+    } else {
+      rows.push(currentRow);
+      currentRow = [{ span, rect }];
+    }
+    lastTop = top;
+  });
+  if (currentRow.length) rows.push(currentRow);
+
+  rows.forEach((row, rowIdx) => {
+    row.forEach(({ span, rect }, wordIdx) => {
+      // Row delay grows with row index — upper rows fall first
+      // Word delay: tiny random scatter within a row
+      const rowDelay  = rowIdx * 80;
+      const wordJitter = Math.random() * 60;
+      const delay = rowDelay + wordJitter;
+
+      setTimeout(() => {
+        if (span.dataset.gone === '1') return;
+        span.dataset.gone = '1';
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        span.style.visibility = 'hidden';
+        launchRain(span.dataset.word, cx, cy);
+      }, delay);
+    });
+  });
+
+  // Re-enable after animation completes
+  const totalDuration = rows.length * 80 + 2000;
+  setTimeout(() => { raining = false; }, totalDuration);
+}
+
+function splitWord(clean) {
+  if (clean.length <= 4) return null;
+  const mid = Math.floor(clean.length / 2);
+  return [clean.slice(0, mid), clean.slice(mid)];
+}
+
+/* ── BEE ── */
+function launchBee(text, x, y) {
+  const el = document.createElement('div');
+  el.className = 'fly-particle';
+  el.textContent = text;
+  el.style.left = x + 'px';
+  el.style.top  = y + 'px';
+  el.style.transform = 'translate(-50%,-50%)';
+  document.body.appendChild(el);
+  const baseAngle = (Math.random() * 2 - 1) * Math.PI;
+  let vx = Math.cos(baseAngle) * 1.4, vy = Math.sin(baseAngle) * 1.4 - 0.5;
+  let bx = x, by = y, t = 0, wobble = Math.random() * 100;
+  function step() {
+    t++; wobble += 0.2;
+    vx += Math.sin(wobble * 1.5) * 0.15;
+    vy += Math.cos(wobble) * 0.1 - 0.012;
+    const spd = Math.sqrt(vx*vx + vy*vy);
+    if (spd > 2.8) { vx = vx/spd*2.8; vy = vy/spd*2.8; }
+    bx += vx; by += vy;
+    const opacity = Math.max(0, 1 - t / 160);
+    el.style.left = bx + 'px'; el.style.top = by + 'px';
+    el.style.transform = `translate(-50%,-50%) rotate(${Math.sin(wobble*0.7)*18}deg)`;
+    el.style.opacity = opacity;
+    if (opacity > 0.01) requestAnimationFrame(step); else el.remove();
+  }
+  requestAnimationFrame(step);
+}
+
+/* ── BUTTERFLY ──
+   Both halves pivot at their inner edge (the split point).
+   Left half drifts left, right half drifts right.
+   Each flaps around its inner edge: rotate ± angle.
+*/
+function launchButterfly(left, right, cx, cy) {
+  const lEl = document.createElement('div');
+  const rEl = document.createElement('div');
+  lEl.className = rEl.className = 'fly-particle';
+  lEl.textContent = left;
+  rEl.textContent = right;
+
+  lEl.style.visibility = rEl.style.visibility = 'hidden';
+  document.body.appendChild(lEl);
+  document.body.appendChild(rEl);
+  const lW = lEl.getBoundingClientRect().width;
+  const h  = lEl.getBoundingClientRect().height;
+  lEl.style.visibility = rEl.style.visibility = '';
+
+  // Left half: inner edge = right side → pivot at (lW, h/2) within element
+  // Right half: inner edge = left side → pivot at (0, h/2) within element
+  lEl.style.transformOrigin = 'right center';
+  rEl.style.transformOrigin = 'left center';
+
+  const driftSpeed = 1.0 + Math.random() * 0.5;
+  const driftUp    = 0.35 + Math.random() * 0.25;
+
+  let t = 0;
+  let lPivotX = cx, lPivotY = cy;
+  let rPivotX = cx, rPivotY = cy;
+
+  function step() {
+    t += 0.05;
+
+    lPivotX -= driftSpeed + Math.sin(t * 1.3) * 0.3;
+    lPivotY -= driftUp + Math.sin(t * 2.0) * 0.2;
+    rPivotX += driftSpeed + Math.sin(t * 1.1) * 0.3;
+    rPivotY -= driftUp + Math.sin(t * 1.8) * 0.2;
+
+    // Flap angle: oscillate ±25° around 0 — pure up/down wing beat
+    const flapAngle = Math.sin(t * 9) * 25;
+
+    const opacity = Math.max(0, 1 - t / 4.2);
+
+    // Left: pivot (right edge center) sits at lPivotX, lPivotY
+    lEl.style.left      = (lPivotX - lW) + 'px';
+    lEl.style.top       = (lPivotY - h / 2) + 'px';
+    lEl.style.transform = `rotate(${-flapAngle}deg)`;
+    lEl.style.opacity   = opacity;
+
+    // Right: pivot (left edge center) sits at rPivotX, rPivotY
+    rEl.style.left      = rPivotX + 'px';
+    rEl.style.top       = (rPivotY - h / 2) + 'px';
+    rEl.style.transform = `rotate(${flapAngle}deg)`;
+    rEl.style.opacity   = opacity;
+
+    if (opacity > 0.01) requestAnimationFrame(step);
+    else { lEl.remove(); rEl.remove(); }
+  }
+  requestAnimationFrame(step);
+}
+
+/* ── RAIN ──
+   Word falls from its position under gravity to the bottom of the viewport.
+   On impact it bursts into small dot droplets that scatter and fade.
+*/
+function launchRain(text, x, y) {
+  const el = document.createElement('div');
+  el.className = 'fly-particle';
+  el.textContent = text;
+  el.style.left = x + 'px';
+  el.style.top  = y + 'px';
+  el.style.transform = 'translate(-50%,-50%)';
+  document.body.appendChild(el);
+
+  const floor = window.innerHeight - 16;
+  let vy = 2 + Math.random() * 1.5;
+  let by = y;
+
+  function fall() {
+    vy *= 1.055;
+    by += vy;
+    const wobbleX = Math.sin(by * 0.018) * 1.8;
+    el.style.left      = (x + wobbleX) + 'px';
+    el.style.top       = by + 'px';
+    el.style.transform = `translate(-50%,-50%) rotate(${wobbleX * 0.8}deg)`;
+
+    if (by < floor) {
+      requestAnimationFrame(fall);
+    } else {
+      el.remove();
+      splashRain(x + wobbleX, floor);
+    }
+  }
+  requestAnimationFrame(fall);
+}
+
+function splashRain(x, y) {
+  const count = 10 + Math.floor(Math.random() * 6);
+  for (let i = 0; i < count; i++) {
+    const dot = document.createElement('div');
+    const size = 1.5 + Math.random() * 2.5;
+    dot.style.cssText = `position:fixed;pointer-events:none;z-index:9999;
+      width:${size}px;height:${size}px;border-radius:50%;background:var(--ink);
+      left:${x}px;top:${y}px;transform:translate(-50%,-50%);`;
+    document.body.appendChild(dot);
+
+    // Full 360° scatter with upward bias
+    const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.6;
+    const speed = 1.2 + Math.random() * 4.5;
+    let vx = Math.cos(angle) * speed;
+    let vy = Math.sin(angle) * speed;
+    let dx = x, dy = y, t = 0;
+    const life = 32 + Math.floor(Math.random() * 18);
+
+    function dropStep() {
+      t++;
+      vy += 0.15; // gentle gravity on droplets
+      vx *= 0.98; // slight air resistance
+      dx += vx; dy += vy;
+      const opacity = Math.max(0, 1 - t / life);
+      dot.style.left    = dx + 'px';
+      dot.style.top     = dy + 'px';
+      dot.style.opacity = opacity;
+      if (opacity > 0.01) requestAnimationFrame(dropStep); else dot.remove();
+    }
+    requestAnimationFrame(dropStep);
+  }
+}
+
+/* ── BLOSSOM ──
+   Word disappears; a soft round flower blooms in its exact place and stays.
+   No stroke. Petals are wide oval lobes — rounder control points.
+   Colors: light spring palette.
+*/
+const blossomColors = [
+  '#ffffff','#ffffff','#ffffff','#ffffff',
+  '#ffffff','#ffffff','#ffffff','#ffffff',
+  '#ffffff','#ffffff','#ffffff','#ffffff',
+];
+
+function makeBlossom(color, size) {
+  const ns  = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  const dim = size * 7;
+  svg.setAttribute('width',  dim);
+  svg.setAttribute('height', dim);
+  svg.style.cssText = 'position:fixed;pointer-events:none;z-index:9998;overflow:visible;';
+  svg.classList.add('blossom-svg');
+
+  const cx = dim / 2, cy = dim / 2;
+  const n   = 5 + Math.floor(Math.random() * 2);
+  const baseAngle = Math.random() * Math.PI * 2;
+
+  const petalRx = size * 0.48;   // width of petal (short axis)
+  const petalRy = size * 0.95;   // length of petal (long axis, points outward)
+  const offset  = size * 1.0;    // center-to-petal-center distance
+
+  for (let i = 0; i < n; i++) {
+    const angle = baseAngle + (i / n) * Math.PI * 2;
+    const angleDeg = angle * (180 / Math.PI);
+
+    // Petal center along the radial direction
+    const px = cx + Math.cos(angle) * offset;
+    const py = cy + Math.sin(angle) * offset;
+
+    // Ellipse drawn upright (long axis = vertical = ry),
+    // then rotated so its long axis aligns with the radial direction.
+    // SVG rotate(deg, pivotX, pivotY) rotates around the ellipse center.
+    const ellipse = document.createElementNS(ns, 'ellipse');
+    ellipse.setAttribute('cx', px);
+    ellipse.setAttribute('cy', py);
+    ellipse.setAttribute('rx', petalRx);
+    ellipse.setAttribute('ry', petalRy);
+    // Rotate the ellipse around its own center so long axis points outward.
+    // Upright ellipse long axis is at 90°, so we need angleDeg - 90.
+    ellipse.setAttribute('transform',
+      `rotate(${angleDeg - 90}, ${px}, ${py})`);
+    ellipse.setAttribute('fill', 'none');
+    ellipse.setAttribute('stroke', '#ffffff');
+    ellipse.setAttribute('stroke-width', '1.4');
+    ellipse.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(ellipse);
+  }
+
+  // Center circle
+  const dot = document.createElementNS(ns, 'circle');
+  dot.setAttribute('cx', cx);
+  dot.setAttribute('cy', cy);
+  dot.setAttribute('r',  size * 0.26);
+  dot.setAttribute('fill', 'none');
+  dot.setAttribute('stroke', '#ffffff');
+  dot.setAttribute('stroke-width', '1.2');
+  svg.appendChild(dot);
+  return svg;
+}
+
+function placeBlossom(x, y) {
+  const color = blossomColors[Math.floor(Math.random() * blossomColors.length)];
+  const size  = 6 + Math.random() * 6;   // slightly larger, rounder
+  const svg   = makeBlossom(color, size);
+  const half  = (size * 6) / 2;
+  const rot   = Math.random() * 360;
+
+  // Place flower centered on the word's position, stays fixed there
+  svg.style.left            = (x - half) + 'px';
+  svg.style.top             = (y - half) + 'px';
+  svg.style.transformOrigin = `${half}px ${half}px`;
+  svg.style.transform       = `rotate(${rot}deg) scale(0)`;
+  svg.style.opacity         = '1';
+  document.body.appendChild(svg);
+
+  // Bloom in only — no drift, no fade, stays on canvas
+  let t = 0;
+  const bloomDur = 18;
+
+  function bloom() {
+    t++;
+    const ease = 1 - Math.pow(1 - Math.min(t / bloomDur, 1), 3);
+    svg.style.transform = `rotate(${rot}deg) scale(${ease})`;
+    if (t < bloomDur) requestAnimationFrame(bloom);
+  }
+  requestAnimationFrame(bloom);
+}
+
+/* ── RIPPLE (p5 overlay + text displacement) ── */
+const rippleWaves  = [];
+let   rippleRafId  = null;
+let   rippleActive = false;
+let   rippleSketch = null;
+
+function ensureRippleSketch() {
+  if (rippleSketch || typeof p5 === 'undefined') return;
+  const paper = document.getElementById('paper');
+  const host = document.createElement('div');
+  host.id = 'ripple-canvas-host';
+  paper.appendChild(host);
+
+  rippleSketch = new p5((p) => {
+    let canvas;
+
+    p.setup = () => {
+      canvas = p.createCanvas(paper.clientWidth, paper.clientHeight);
+      canvas.parent(host);
+      p.clear();
+      p.noFill();
+      p.strokeWeight(1.1);
+    };
+
+    p.draw = () => {
+      p.clear();
+      if (!rippleActive) return;
+      const now = performance.now() / 1000;
+      rippleWaves.forEach((w) => {
+        const age = now - w.born;
+        if (age < 0 || age > w.life) return;
+        const t = age / w.life;
+        const alpha = 160 * (1 - t);
+        const r1 = 8 + age * 240;
+        const r2 = r1 * 0.72;
+        p.stroke(255, 255, 255, alpha);
+        p.circle(w.lx, w.ly, r1 * 2);
+        p.stroke(255, 255, 255, alpha * 0.5);
+        p.circle(w.lx, w.ly, r2 * 2);
+      });
+    };
+
+    p.windowResized = () => {
+      p.resizeCanvas(paper.clientWidth, paper.clientHeight);
+    };
+  });
+}
+
+function initRipple() {
+  rippleActive = true;
+  ensureRippleSketch();
+  if (!rippleRafId) rippleRafId = requestAnimationFrame(tickRipple);
+}
+
+function destroyRipple() {
+  rippleActive = false;
+  if (rippleRafId) { cancelAnimationFrame(rippleRafId); rippleRafId = null; }
+  rippleWaves.length = 0;
+  // Reset all spans
+  document.querySelectorAll('#poem-display .word-part').forEach(s => {
+    s.style.transform = '';
+    s.style.display   = '';
+  });
+}
+
+function tickRipple() {
+  if (!rippleActive) return;
+  const now  = performance.now() / 1000;
+  const spans = Array.from(document.querySelectorAll('#poem-display .word-part'));
+
+  // Remove dead waves
+  for (let i = rippleWaves.length - 1; i >= 0; i--) {
+    if (now - rippleWaves[i].born > rippleWaves[i].life) rippleWaves.splice(i, 1);
+  }
+
+  spans.forEach(span => {
+    const rect = span.getBoundingClientRect();
+    const sx   = rect.left + rect.width  / 2;
+    const sy   = rect.top  + rect.height / 2;
+
+    let totalDY = 0;
+    let totalDX = 0;
+
+    rippleWaves.forEach(w => {
+      const age  = now - w.born;
+      if (age < 0 || age > w.life) return;
+
+      const dx   = sx - w.x;
+      const dy   = sy - w.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // Wave equation: sin(k*dist - omega*age) * envelope
+      const k       = 0.032;
+      const omega   = 7.0;
+      const sigma   = 180;
+      const timeFade = Math.max(0, 1 - age / w.life);
+      const envelope = Math.exp(-dist / sigma) * timeFade;
+      // Suppress wave at the origin itself — near-field = 0
+      const nearSuppress = Math.min(1, dist / 40);
+      const phase    = k * dist - omega * age;
+      const wave     = Math.sin(phase) * envelope * w.amp * nearSuppress;
+
+      // Displace radially outward from origin
+      if (dist > 0.5) {
+        totalDX += wave * (dx / dist);
+        totalDY += wave * (dy / dist);
+      } else {
+        totalDY += wave;
+      }
+    });
+
+    span.style.transform = `translate(${totalDX.toFixed(2)}px, ${totalDY.toFixed(2)}px)`;
+  });
+
+  rippleRafId = requestAnimationFrame(tickRipple);
+}
+
+function launchRipple(span) {
+  const rect = span.getBoundingClientRect();
+  const paperRect = document.getElementById('paper').getBoundingClientRect();
+  const x = rect.left + rect.width / 2;
+  const y = rect.top  + rect.height / 2;
+  rippleWaves.push({
+    x,
+    y,
+    lx:   x - paperRect.left,
+    ly:   y - paperRect.top,
+    born: performance.now() / 1000,
+    life: 2.4,
+    amp:  4 + Math.random() * 3,
+  });
+}
+
+/* ── GRAVITY ──
+   Each word has a rest position and a current position.
+   Mouse acts as an attractor — words are pulled toward it,
+   with force proportional to 1/distance².
+   Spring force pulls each word back to its rest position.
+   Velocity is damped each frame.
+*/
+let magnetActive  = false;
+let magnetRafId   = null;
+let magnetMouse   = { x: -9999, y: -9999 };
+let magnetParticles = [];
+
+function initMagnet() {
+  magnetActive = true;
+
+  // Build particles from current spans
+  magnetParticles = [];
+  document.querySelectorAll('#poem-display .word-part').forEach(span => {
+    const rect = span.getBoundingClientRect();
+    const ox = rect.left + rect.width  / 2;
+    const oy = rect.top  + rect.height / 2;
+    magnetParticles.push({
+      span,
+      ox, oy,       // rest position (screen coords, updated each frame via original layout)
+      dx: 0, dy: 0, // displacement from rest
+      vx: 0, vy: 0, // velocity
+    });
+    span.style.display = 'inline-block';
+    span.style.transition = 'none';
+  });
+
+  document.addEventListener('mousemove', onMagnetMouse);
+  document.addEventListener('mouseleave', onMagnetLeave);
+  magnetRafId = requestAnimationFrame(tickMagnet);
+}
+
+function destroyMagnet() {
+  magnetActive = false;
+  if (magnetRafId) { cancelAnimationFrame(magnetRafId); magnetRafId = null; }
+  document.removeEventListener('mousemove', onMagnetMouse);
+  document.removeEventListener('mouseleave', onMagnetLeave);
+  magnetParticles.forEach(p => {
+    p.span.style.transform = '';
+  });
+  magnetParticles = [];
+}
+
+function onMagnetMouse(e) {
+  magnetMouse.x = e.clientX;
+  magnetMouse.y = e.clientY;
+}
+
+function onMagnetLeave() {
+  magnetMouse.x = -9999;
+  magnetMouse.y = -9999;
+}
+
+function tickMagnet() {
+  if (!magnetActive) return;
+
+  const mx = magnetMouse.x;
+  const my = magnetMouse.y;
+  const G  = 80000;   // magnetic constant — much stronger pull
+  const k  = 0.08;    // spring stiffness (return force)
+  const damping = 0.72; // less damping = snappier response
+
+  magnetParticles.forEach(p => {
+    // Current world position of the word
+    const wx = p.ox + p.dx;
+    const wy = p.oy + p.dy;
+
+    // Vector from word to mouse
+    const toMx = mx - wx;
+    const toMy = my - wy;
+    const dist  = Math.sqrt(toMx * toMx + toMy * toMy) + 1;
+
+    // Gravitational pull — stronger when closer, but capped so words don't teleport
+    const force  = Math.min(G / (dist * dist), 12.0);
+    const ax = (toMx / dist) * force;
+    const ay = (toMy / dist) * force;
+
+    // Spring restore toward rest position
+    const sx = -k * p.dx;
+    const sy = -k * p.dy;
+
+    // Integrate
+    p.vx = (p.vx + ax + sx) * damping;
+    p.vy = (p.vy + ay + sy) * damping;
+    p.dx += p.vx;
+    p.dy += p.vy;
+
+    p.span.style.transform = `translate(${p.dx.toFixed(2)}px, ${p.dy.toFixed(2)}px)`;
+  });
+
+  magnetRafId = requestAnimationFrame(tickMagnet);
+}
+
+
+// Bind buttons
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => setMode(btn.dataset.mode));
+});
+document.getElementById('reset-btn').addEventListener('click', resetPoem);
+
+renderPoem();
+</script>
+</body>
+</html>
