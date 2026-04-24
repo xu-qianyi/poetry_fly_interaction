@@ -205,6 +205,57 @@
   }
 
 
+  /* ── Loader ── */
+  #loader {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.8s ease;
+  }
+  #loader.hidden { opacity: 0; }
+
+  #loader-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-style: italic;
+    font-size: clamp(22px, 4vw, 30px);
+    color: rgba(255,255,255,0.9);
+    letter-spacing: 0.06em;
+  }
+  #loader-dots {
+    display: flex;
+    gap: 9px;
+    align-items: center;
+  }
+  .loader-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    animation: dotPulse 1.3s ease-in-out infinite;
+  }
+  .loader-dot:nth-child(2) { animation-delay: 0.2s; }
+  .loader-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dotPulse {
+    0%, 80%, 100% { opacity: 0.2; transform: scale(1); }
+    40%            { opacity: 1;   transform: scale(1.6); }
+  }
+
+  /* Content hidden until loader finishes */
+  #shell, #menu-trigger, #reset-btn {
+    opacity: 0;
+    transition: opacity 1s ease;
+  }
+  #shell.visible, #menu-trigger.visible, #reset-btn.visible {
+    opacity: 1;
+  }
+
   /* ── Particles ── */
   .fly-particle {
     position: fixed;
@@ -220,6 +271,15 @@
 </style>
 </head>
 <body>
+<div id="loader" aria-label="Loading">
+  <span id="loader-title">Poems in Flight</span>
+  <div id="loader-dots">
+    <div class="loader-dot"></div>
+    <div class="loader-dot"></div>
+    <div class="loader-dot"></div>
+  </div>
+</div>
+
 <div id="shell">
 
   <div id="paper">
@@ -1381,6 +1441,31 @@ document.addEventListener('click', (e) => {
 
 
 renderPoem();
+
+// Loader dismissal — wait for fonts + a minimum display window
+const loaderEl  = document.getElementById('loader');
+const minDisplay = 1500;
+const loaderStart = performance.now();
+
+function dismissLoader() {
+  const elapsed   = performance.now() - loaderStart;
+  const remaining = Math.max(0, minDisplay - elapsed);
+  setTimeout(() => {
+    // Fade in content
+    document.getElementById('shell').classList.add('visible');
+    document.getElementById('menu-trigger').classList.add('visible');
+    document.getElementById('reset-btn').classList.add('visible');
+    // Fade out loader
+    loaderEl.classList.add('hidden');
+    loaderEl.addEventListener('transitionend', () => loaderEl.remove(), { once: true });
+  }, remaining);
+}
+
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(dismissLoader);
+} else {
+  window.addEventListener('load', dismissLoader);
+}
 
 // Click the pile → letters try to rise home, fail, fall back down
 document.addEventListener('click', e => {
