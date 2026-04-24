@@ -1,0 +1,15 @@
+{
+  "poems": [
+    {
+      "id": "speak-memory",
+      "title": "Speak, Memory - Vladimir Nabokov",
+      "lines": [
+        ["The", "passion", "for", "butterflies", "is", "not", "easily", "explained."],
+        ["It", "begins,", "perhaps,", "as", "most", "passions", "do."],
+        [],
+        ["To", "know", "the", "name", "is", "to", "hold", "a", "creature", "still,"],
+        ["if", "only", "for", "a", "moment,", "in", "the", "amber", "of", "language."]
+      ]
+    }
+  ]
+}
