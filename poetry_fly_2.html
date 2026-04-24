@@ -150,7 +150,7 @@
     font-weight: 400;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: rgba(255,255,255,0.28);
+    color: rgba(255,255,255,0.55);
     padding: 0 8px;
     margin-bottom: 0.5rem;
   }
@@ -181,6 +181,55 @@
     color: #fff;
     font-style: italic;
     background: rgba(255,255,255,0.11);
+  }
+
+  #color-swatches {
+    position: fixed;
+    bottom: 1.8rem;
+    left: 2.2rem;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    z-index: 300;
+    opacity: 0;
+    transition: opacity 1s ease;
+  }
+  #color-swatches.visible { opacity: 1; }
+  .color-swatch {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.8);
+    cursor: pointer;
+    padding: 0;
+    outline: none;
+    transition: border-color 0.15s;
+    flex-shrink: 0;
+  }
+  .color-swatch.active {
+    border-color: rgba(255,255,255,0.8);
+  }
+  .color-swatch[data-tip] {
+    position: relative;
+  }
+  .color-swatch[data-tip]::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 7px);
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 11px;
+    font-style: italic;
+    letter-spacing: 0.04em;
+    color: rgba(255,255,255,0.75);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .color-swatch[data-tip]:hover::after {
+    opacity: 1;
   }
 
   #reset-btn {
@@ -255,6 +304,7 @@
   #shell.visible, #menu-trigger.visible, #reset-btn.visible {
     opacity: 1;
   }
+  /* #color-swatches fade handled by its own .visible class in the swatch block */
 
   /* ── Particles ── */
   .fly-particle {
@@ -306,6 +356,14 @@
 </div>
 
 <button id="reset-btn">reset</button>
+
+<div id="color-swatches">
+  <button class="color-swatch active" data-color="klein" data-tip="Klein Blue" style="background:#002FA7" aria-label="Klein Blue"></button>
+  <button class="color-swatch" data-color="black" data-tip="Midnight" style="background:#111111" aria-label="Midnight"></button>
+  <button class="color-swatch" data-color="green" data-tip="Forest Green" style="background:#0a2318" aria-label="Forest Green"></button>
+  <button class="color-swatch" data-color="brown" data-tip="Umber" style="background:#2a1506" aria-label="Umber"></button>
+  <button class="color-swatch" data-color="red" data-tip="Bordeaux" style="background:#2d0a0a" aria-label="Bordeaux"></button>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
 <script>
 const poems = {
@@ -1414,6 +1472,31 @@ document.querySelectorAll('.mode-btn').forEach(btn => {
 });
 document.getElementById('reset-btn').addEventListener('click', resetPoem);
 
+// Background color palette
+const bgColors = {
+  klein: { paper: '#002FA7', dropdown: 'rgba(0,28,138,0.96)' },
+  black: { paper: '#111111', dropdown: 'rgba(14,14,14,0.96)' },
+  green: { paper: '#0a2318', dropdown: 'rgba(8,26,16,0.96)' },
+  brown: { paper: '#2a1506', dropdown: 'rgba(30,16,5,0.96)' },
+  red:   { paper: '#2d0a0a', dropdown: 'rgba(34,8,8,0.96)' },
+};
+
+function setBgColor(key) {
+  const c = bgColors[key];
+  document.documentElement.style.setProperty('--paper', c.paper);
+  menuDropdown.style.background = c.dropdown;
+  document.querySelectorAll('.color-swatch').forEach(b => {
+    b.classList.toggle('active', b.dataset.color === key);
+  });
+}
+
+document.querySelectorAll('.color-swatch').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setBgColor(btn.dataset.color);
+  });
+});
+
 // Dropdown open / close
 const menuTrigger  = document.getElementById('menu-trigger');
 const menuDropdown = document.getElementById('menu-dropdown');
@@ -1455,6 +1538,7 @@ function dismissLoader() {
     document.getElementById('shell').classList.add('visible');
     document.getElementById('menu-trigger').classList.add('visible');
     document.getElementById('reset-btn').classList.add('visible');
+    document.getElementById('color-swatches').classList.add('visible');
     // Fade out loader
     loaderEl.classList.add('hidden');
     loaderEl.addEventListener('transitionend', () => loaderEl.remove(), { once: true });
